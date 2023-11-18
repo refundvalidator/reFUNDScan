@@ -1,0 +1,385 @@
+{
+  "jsonrpc": "2.0",
+  "id": 0,
+  "result": {
+    "query": "tm.event='Tx'",
+    "data": {
+      "type": "tendermint/event/Tx",
+      "value": {
+        "TxResult": {
+          "height": "7929814",
+          "tx": "CrsBCrgBCikvaWJjLmFwcGxpY2F0aW9ucy50cmFuc2Zlci52MS5Nc2dUcmFuc2ZlchKKAQoIdHJhbnNmZXISCWNoYW5uZWwtMBoRCgRudW5kEgkyMDAwMDAwMDAiKnVuZDFrMDN1dmtrem10a3ZmZWR1ZmF4ZnQ3NXlxZGZrZmd2Z203N3p3bSorb3NtbzFqZTU0ejhwNHl0cGxxYXJlNW5mNnFqOHUzMHRucnhzY2ZuODN5eTIHCAEQqKP1BRJrClEKRgofL2Nvc21vcy5jcnlwdG8uc2VjcDI1NmsxLlB1YktleRIjCiEDfhgW0ewQ3xBP21guQDLLvyE9D3Gl0Ah9wbW3VBaXMioSBAoCCH8YjwESFgoQCgRudW5kEgg0OTA5MDQwMBDmvgcaQHnQrARQvK3ueUNWnZ4/sByUsv69O0GcQvSN6cvtPrQOPL7ZfwU0/4GR4LkAJDlI/7XVHNCklycQojxsseAGCZ0=",
+          "result": {
+            "data": "EjgKMS9pYmMuYXBwbGljYXRpb25zLnRyYW5zZmVyLnYxLk1zZ1RyYW5zZmVyUmVzcG9uc2USAwjGAQ==",
+            "log": "[{\"msg_index\":0,\"events\":[{\"type\":\"coin_received\",\"attributes\":[{\"key\":\"receiver\",\"value\":\"und1a53udazy8ayufvy0s434pfwjcedzqv343f9vdg\"},{\"key\":\"amount\",\"value\":\"200000000nund\"}]},{\"type\":\"coin_spent\",\"attributes\":[{\"key\":\"spender\",\"value\":\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\"},{\"key\":\"amount\",\"value\":\"200000000nund\"}]},{\"type\":\"ibc_transfer\",\"attributes\":[{\"key\":\"sender\",\"value\":\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\"},{\"key\":\"receiver\",\"value\":\"osmo1je54z8p4ytplqare5nf6qj8u30tnrxscfn83yy\"}]},{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"/ibc.applications.transfer.v1.MsgTransfer\"},{\"key\":\"sender\",\"value\":\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\"},{\"key\":\"module\",\"value\":\"ibc_channel\"},{\"key\":\"module\",\"value\":\"transfer\"}]},{\"type\":\"send_packet\",\"attributes\":[{\"key\":\"packet_data\",\"value\":\"{\\\"amount\\\":\\\"200000000\\\",\\\"denom\\\":\\\"nund\\\",\\\"receiver\\\":\\\"osmo1je54z8p4ytplqare5nf6qj8u30tnrxscfn83yy\\\",\\\"sender\\\":\\\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\\\"}\"},{\"key\":\"packet_data_hex\",\"value\":\"7b22616d6f756e74223a22323030303030303030222c2264656e6f6d223a226e756e64222c227265636569766572223a226f736d6f316a6535347a3870347974706c71617265356e6636716a38753330746e72787363666e38337979222c2273656e646572223a22756e64316b303375766b6b7a6d746b766665647566617866743735797164666b666776676d37377a776d227d\"},{\"key\":\"packet_timeout_height\",\"value\":\"1-12407208\"},{\"key\":\"packet_timeout_timestamp\",\"value\":\"0\"},{\"key\":\"packet_sequence\",\"value\":\"198\"},{\"key\":\"packet_src_port\",\"value\":\"transfer\"},{\"key\":\"packet_src_channel\",\"value\":\"channel-0\"},{\"key\":\"packet_dst_port\",\"value\":\"transfer\"},{\"key\":\"packet_dst_channel\",\"value\":\"channel-382\"},{\"key\":\"packet_channel_ordering\",\"value\":\"ORDER_UNORDERED\"},{\"key\":\"packet_connection\",\"value\":\"connection-1\"}]},{\"type\":\"transfer\",\"attributes\":[{\"key\":\"recipient\",\"value\":\"und1a53udazy8ayufvy0s434pfwjcedzqv343f9vdg\"},{\"key\":\"sender\",\"value\":\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\"},{\"key\":\"amount\",\"value\":\"200000000nund\"}]}]}]",
+            "gas_wanted": "122726",
+            "gas_used": "99819",
+            "events": [
+              {
+                "type": "coin_spent",
+                "attributes": [
+                  {
+                    "key": "c3BlbmRlcg==",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "NDkwOTA0MDBudW5k",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "coin_received",
+                "attributes": [
+                  {
+                    "key": "cmVjZWl2ZXI=",
+                    "value": "dW5kMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsaHV5ZmRt",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "NDkwOTA0MDBudW5k",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "transfer",
+                "attributes": [
+                  {
+                    "key": "cmVjaXBpZW50",
+                    "value": "dW5kMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsaHV5ZmRt",
+                    "index": true
+                  },
+                  {
+                    "key": "c2VuZGVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "NDkwOTA0MDBudW5k",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "message",
+                "attributes": [
+                  {
+                    "key": "c2VuZGVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "tx",
+                "attributes": [
+                  {
+                    "key": "ZmVl",
+                    "value": "NDkwOTA0MDBudW5k",
+                    "index": true
+                  },
+                  {
+                    "key": "ZmVlX3BheWVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "tx",
+                "attributes": [
+                  {
+                    "key": "YWNjX3NlcQ==",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endtLzE0Mw==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "tx",
+                "attributes": [
+                  {
+                    "key": "c2lnbmF0dXJl",
+                    "value": "ZWRDc0JGQzhyZTU1UTFhZG5qK3dISlN5L3IwN1FaeEM5STNweSswK3RBNDh2dGwvQlRUL2daSGd1UUFrT1VqL3RkVWMwS1NYSnhDaVBHeXg0QVlKblE9PQ==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "message",
+                "attributes": [
+                  {
+                    "key": "YWN0aW9u",
+                    "value": "L2liYy5hcHBsaWNhdGlvbnMudHJhbnNmZXIudjEuTXNnVHJhbnNmZXI=",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "coin_spent",
+                "attributes": [
+                  {
+                    "key": "c3BlbmRlcg==",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "MjAwMDAwMDAwbnVuZA==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "coin_received",
+                "attributes": [
+                  {
+                    "key": "cmVjZWl2ZXI=",
+                    "value": "dW5kMWE1M3VkYXp5OGF5dWZ2eTBzNDM0cGZ3amNlZHpxdjM0M2Y5dmRn",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "MjAwMDAwMDAwbnVuZA==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "transfer",
+                "attributes": [
+                  {
+                    "key": "cmVjaXBpZW50",
+                    "value": "dW5kMWE1M3VkYXp5OGF5dWZ2eTBzNDM0cGZ3amNlZHpxdjM0M2Y5dmRn",
+                    "index": true
+                  },
+                  {
+                    "key": "c2VuZGVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  },
+                  {
+                    "key": "YW1vdW50",
+                    "value": "MjAwMDAwMDAwbnVuZA==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "message",
+                "attributes": [
+                  {
+                    "key": "c2VuZGVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "send_packet",
+                "attributes": [
+                  {
+                    "key": "cGFja2V0X2RhdGE=",
+                    "value": "eyJhbW91bnQiOiIyMDAwMDAwMDAiLCJkZW5vbSI6Im51bmQiLCJyZWNlaXZlciI6Im9zbW8xamU1NHo4cDR5dHBscWFyZTVuZjZxajh1MzB0bnJ4c2NmbjgzeXkiLCJzZW5kZXIiOiJ1bmQxazAzdXZra3ptdGt2ZmVkdWZheGZ0NzV5cWRma2ZndmdtNzd6d20ifQ==",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X2RhdGFfaGV4",
+                    "value": "N2IyMjYxNmQ2Zjc1NmU3NDIyM2EyMjMyMzAzMDMwMzAzMDMwMzAzMDIyMmMyMjY0NjU2ZTZmNmQyMjNhMjI2ZTc1NmU2NDIyMmMyMjcyNjU2MzY1Njk3NjY1NzIyMjNhMjI2ZjczNmQ2ZjMxNmE2NTM1MzQ3YTM4NzAzNDc5NzQ3MDZjNzE2MTcyNjUzNTZlNjYzNjcxNmEzODc1MzMzMDc0NmU3Mjc4NzM2MzY2NmUzODMzNzk3OTIyMmMyMjczNjU2ZTY0NjU3MjIyM2EyMjc1NmU2NDMxNmIzMDMzNzU3NjZiNmI3YTZkNzQ2Yjc2NjY2NTY0NzU2NjYxNzg2Njc0MzczNTc5NzE2NDY2NmI2NjY3NzY2NzZkMzczNzdhNzc2ZDIyN2Q=",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X3RpbWVvdXRfaGVpZ2h0",
+                    "value": "MS0xMjQwNzIwOA==",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X3RpbWVvdXRfdGltZXN0YW1w",
+                    "value": "MA==",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X3NlcXVlbmNl",
+                    "value": "MTk4",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X3NyY19wb3J0",
+                    "value": "dHJhbnNmZXI=",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X3NyY19jaGFubmVs",
+                    "value": "Y2hhbm5lbC0w",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X2RzdF9wb3J0",
+                    "value": "dHJhbnNmZXI=",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X2RzdF9jaGFubmVs",
+                    "value": "Y2hhbm5lbC0zODI=",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X2NoYW5uZWxfb3JkZXJpbmc=",
+                    "value": "T1JERVJfVU5PUkRFUkVE",
+                    "index": true
+                  },
+                  {
+                    "key": "cGFja2V0X2Nvbm5lY3Rpb24=",
+                    "value": "Y29ubmVjdGlvbi0x",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "message",
+                "attributes": [
+                  {
+                    "key": "bW9kdWxl",
+                    "value": "aWJjX2NoYW5uZWw=",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "ibc_transfer",
+                "attributes": [
+                  {
+                    "key": "c2VuZGVy",
+                    "value": "dW5kMWswM3V2a2t6bXRrdmZlZHVmYXhmdDc1eXFkZmtmZ3ZnbTc3endt",
+                    "index": true
+                  },
+                  {
+                    "key": "cmVjZWl2ZXI=",
+                    "value": "b3NtbzFqZTU0ejhwNHl0cGxxYXJlNW5mNnFqOHUzMHRucnhzY2ZuODN5eQ==",
+                    "index": true
+                  }
+                ]
+              },
+              {
+                "type": "message",
+                "attributes": [
+                  {
+                    "key": "bW9kdWxl",
+                    "value": "dHJhbnNmZXI=",
+                    "index": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "events": {
+      "message.action": [
+        "/ibc.applications.transfer.v1.MsgTransfer"
+      ],
+      "send_packet.packet_timeout_timestamp": [
+        "0"
+      ],
+      "tx.hash": [
+        "3C531E18E6E4FCC4FE57793DF5DD819B2F6AAFF3D55796D3A608453A892C39F6"
+      ],
+      "transfer.recipient": [
+        "und17xpfvakm2amg962yls6f84z3kell8c5lhuyfdm",
+        "und1a53udazy8ayufvy0s434pfwjcedzqv343f9vdg"
+      ],
+      "tx.acc_seq": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm/143"
+      ],
+      "send_packet.packet_src_port": [
+        "transfer"
+      ],
+      "coin_spent.amount": [
+        "49090400nund",
+        "200000000nund"
+      ],
+      "ibc_transfer.sender": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+      ],
+      "send_packet.packet_data_hex": [
+        "7b22616d6f756e74223a22323030303030303030222c2264656e6f6d223a226e756e64222c227265636569766572223a226f736d6f316a6535347a3870347974706c71617265356e6636716a38753330746e72787363666e38337979222c2273656e646572223a22756e64316b303375766b6b7a6d746b766665647566617866743735797164666b666776676d37377a776d227d"
+      ],
+      "ibc_transfer.receiver": [
+        "osmo1je54z8p4ytplqare5nf6qj8u30tnrxscfn83yy"
+      ],
+      "send_packet.packet_src_channel": [
+        "channel-0"
+      ],
+      "tm.event": [
+        "Tx"
+      ],
+      "coin_received.amount": [
+        "49090400nund",
+        "200000000nund"
+      ],
+      "transfer.amount": [
+        "49090400nund",
+        "200000000nund"
+      ],
+      "send_packet.packet_data": [
+        "{\"amount\":\"200000000\",\"denom\":\"nund\",\"receiver\":\"osmo1je54z8p4ytplqare5nf6qj8u30tnrxscfn83yy\",\"sender\":\"und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm\"}"
+      ],
+      "send_packet.packet_sequence": [
+        "198"
+      ],
+      "send_packet.packet_channel_ordering": [
+        "ORDER_UNORDERED"
+      ],
+      "tx.height": [
+        "7929814"
+      ],
+      "message.sender": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm",
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+      ],
+      "tx.fee_payer": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+      ],
+      "send_packet.packet_timeout_height": [
+        "1-12407208"
+      ],
+      "send_packet.packet_dst_port": [
+        "transfer"
+      ],
+      "tx.signature": [
+        "edCsBFC8re55Q1adnj+wHJSy/r07QZxC9I3py+0+tA48vtl/BTT/gZHguQAkOUj/tdUc0KSXJxCiPGyx4AYJnQ=="
+      ],
+      "send_packet.packet_dst_channel": [
+        "channel-382"
+      ],
+      "send_packet.packet_connection": [
+        "connection-1"
+      ],
+      "message.module": [
+        "ibc_channel",
+        "transfer"
+      ],
+      "coin_spent.spender": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm",
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+      ],
+      "coin_received.receiver": [
+        "und17xpfvakm2amg962yls6f84z3kell8c5lhuyfdm",
+        "und1a53udazy8ayufvy0s434pfwjcedzqv343f9vdg"
+      ],
+      "transfer.sender": [
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm",
+        "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+      ],
+      "tx.fee": [
+        "49090400nund"
+      ]
+    }
+  }
+}
