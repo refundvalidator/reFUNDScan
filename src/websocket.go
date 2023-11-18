@@ -21,7 +21,7 @@ func main() {
     } 
     defer c.Close()    
 
-    subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='NewBlock'" } }`)
+    subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='Tx'" } }`)
     err = c.WriteMessage(websocket.TextMessage, subscribe)
     if err != nil{
         log.Fatal("Couldn't Subscribe: " , err) 
