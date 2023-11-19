@@ -1,13 +1,10 @@
 package main
 
 import (
-    "log"
-    "net/url"
     "os"
-    "os/signal"
+    "log"
     "fmt"
     "encoding/json"
-    "unicode"
     "math"
     "strconv"
 
@@ -22,7 +19,8 @@ const (
     gravExplorerAccount string = "https://www.mintscan.io/gravity-bridge/address/"
 )
 
-type JsonResponse struct {
+// The JSON Response received by the websocket
+type WebsocketResponse struct {
     Result struct {
         Events struct {
             MessageAction []string `json:"message.action"` 
@@ -37,56 +35,88 @@ type JsonResponse struct {
     } `json:"result"`
 }
 
+// Checks if the wallet is a names wallet and returns the name if it is, otherwise returns a
+// Truncated version of the address
+func getAccountName(msg string) string {
+    named := map[string]string{
+        "BitForex": "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7",
+        "Poloniex" : "und186slma7kkxlghwc3hzjr9gkqwhefhln5pw5k26",
+        "ProBit" : "und1jkhkllr3ws3uxclawn4kpuuglffg327wvfg8r9",
+        "DigiFinex" : "und1xnrruk9qlgnmh8qxcz9ypfezj45qk96v2rgnzk",
+    }
+    for key, val := range named {
+        if val == msg{
+            return key
+        }
+    }
+    // Return truncated addr if the addr isnt in the named map
+    return fmt.Sprintf("%s...%s",msg[:7],msg[len(msg)-7:])
+}
+
+// Returns the correct ExplorerAccount url depending on the address type
+// Defaults to fundExplorerAccount if the addr type is unknown
+func getExplorerAccount(msg string) string {
+    switch msg[:3] {
+    case "osm":
+        return osmoExplorerAccount
+    case "gra":
+        return gravExplorerAccount
+    default:
+        return fundExplorerAccount
+    }
+}
+
+// Converts the denom to the formatted amount
+// E.G. 1000000000nund becomes 1.00 FUND
+// If the denom is unknown, returns "null"
 func denomToAmount(msg string) string {
     var amount string
     var denom string
-    var breakpoint int
-    // Extract the numerical amount from the msg
-    for i, char := range msg {
-        if unicode.IsDigit(char) {
-            amount += string(char)
-        } else {
-            breakpoint = i
-            break
-        }
-    } 
-    // Extract denom like "nund" or "ibc/xxxx" from the msg
-    for i, char := range msg {
-        if i >= breakpoint {
-            denom += string(char)
-        } 
+
+    switch msg[len(msg)-4:] {
+    case "nund":
+        denom = "nund"
+        amount = msg[:len(msg)-4]
+    default:
+        // Other IBC denoms such as ibc/xxxx
+        // IBC denom hash is always 64 chars + 4 chars for the ibc/
+        denom = msg[len(msg)-68:]
+        amount = msg[:len(msg)-68]
     }
+
     numericalAmount, _ := strconv.ParseFloat(amount, 64)
 
-    if denom == "nund" {
+    switch denom {
+    case "nund":
+        // Fund
         numericalAmount = math.Round((numericalAmount/1000000000)*100)/100
         formattedamount := strconv.FormatFloat(numericalAmount, 'f', 2, 64)
         return (formattedamount + " FUND")
-     } else if denom == "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518" {
-        //osmo
+    case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
+        // Osmo
         numericalAmount = math.Round((numericalAmount/1000000)*100)/100
         formattedamount := strconv.FormatFloat(numericalAmount, 'f', 2, 64)
         return (formattedamount + " OSMO")
+    default:
+        // Unknown IBC Types
+        return "null"
     }
-    return "null"
 }
 
-func main() {
-    interrupt := make(chan os.Signal, 1) 
-    signal.Notify(interrupt, os.Interrupt) 
-    u := url.URL {Scheme:"wss",Host:"rpc1.unification.io",Path:"/websocket"} 
-    c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)  
+// Connect to the websocket and serve the formatted responses to the given channel resp
+func Connect(resp chan string) {
+    c, _, err := websocket.DefaultDialer.Dial(Url, nil)  
     if err != nil{
-        log.Fatal("dail: ", err) 
-        return
+        log.Fatal("Failed to dial websocket: ", err) 
+        os.Exit(2)
     } 
     defer c.Close()    
 
     subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='Tx'" } }`)
     err = c.WriteMessage(websocket.TextMessage, subscribe)
     if err != nil{
-        log.Fatal("Couldn't Subscribe: " , err) 
-        return
+        log.Fatal("Couldn't subscribe to websocket: " , err) 
+        os.Exit(2)
     } 
 
     done := make(chan string)  
@@ -96,44 +126,58 @@ func main() {
         for {
             _,m,err := c.ReadMessage()
             if err != nil{
-                log.Fatal("read: ", err) 
-                return
+                log.Fatal("Failed to read json response: ", err) 
             } 
-            var res JsonResponse // struct version of the json object
+            var res WebsocketResponse // struct version of the json object
             if err := json.Unmarshal(m,&res); err != nil {
-                fmt.Printf("Cannot Unmarshal")
+                log.Fatal("Couldn't unmarshal json response: ", err)
             }
-            if len(res.Result.Events.MessageAction) >= 1 {
+            events := res.Result.Events
+            if len(events.MessageAction) >= 1 {
                 // TODO: Add restake transactions, rewards withdrawal, comission withdrawal, delegations, undelegations
                 // governance votes, validator creations, validator edits, memos
 
-                // On Chain Transfers
-                if res.Result.Events.MessageAction[0] == "/cosmos.bank.v1beta1.MsgSend" {
-                    fmt.Printf("Action:%s\nSender:%s\nReciever:%s\nAmount:%s\nHash:%s\n\n",
-                        res.Result.Events.MessageAction[0],
-                        res.Result.Events.TransferSender[0],
-                        res.Result.Events.TransferRecipient[1],
-                        denomToAmount(res.Result.Events.TransferAmount[1]),
-                        res.Result.Events.TxHash[0]) 
-                }
-                // FUND > Other Chain Transfers
-                if res.Result.Events.MessageAction[0] == "/ibc.applications.transfer.v1.MsgTransfer" {
-                    fmt.Printf("Action:%s\nSender:%s\nReciever:%s\nAmount:%s\nHash:%s\n\n",
-                        res.Result.Events.MessageAction[0],
-                        res.Result.Events.IBCTransferSender[0],
-                        res.Result.Events.IBCTransferReciever[0],
-                        denomToAmount(res.Result.Events.TransferAmount[1]),
-                        res.Result.Events.TxHash[0])
-                }
-                // Other Chain > FUND Transfers
-                if len(res.Result.Events.MessageAction) >= 2 {
-                    if res.Result.Events.MessageAction[1] == "/ibc.core.channel.v1.MsgRecvPacket" {
-                        fmt.Printf("Action:%s\nSender:%s\nReciever:%s\nAmount:%s\nHash:%s\n\n",
-                            res.Result.Events.MessageAction[1],
-                            res.Result.Events.IBCForeignSender[0],
-                            res.Result.Events.TransferRecipient[1],
-                            denomToAmount(res.Result.Events.TransferAmount[1]),
-                            res.Result.Events.TxHash[0])
+                if events.MessageAction[0] == "/cosmos.bank.v1beta1.MsgSend" {
+                    // On Chain Transfers
+                    resp <- fmt.Sprintf("‎\n<b>📬%s📬</b>\n\n<b>Sender:</b> <a href=\"%s%s\">%s</a>\n<b>Reciever:</b> <a href=\"%s%s\">%s</a>\n<b>Amount:</b> <a href=\"%s%s\">%s</a>\n\n",
+                        "Transfer",
+                        fundExplorerAccount,
+                        events.TransferSender[0],
+                        getAccountName(events.TransferSender[0]),
+                        fundExplorerAccount,
+                        events.TransferRecipient[1],
+                        getAccountName(events.TransferRecipient[1]),
+                        fundExplorerTx,
+                        events.TxHash[0],
+                        denomToAmount(events.TransferAmount[1]))
+                } else if res.Result.Events.MessageAction[0] == "/ibc.applications.transfer.v1.MsgTransfer" {
+                    // FUND > Other Chain IBC
+                    resp <- fmt.Sprintf("‎\n<b>⚛️%s⚛️</b>\n\n<b>Sender:</b> <a href=\"%s%s\">%s</a>\n<b>Reciever:</b> <a href=\"%s%s\">%s</a>\n<b>Amount:</b> <a href=\"%s%s\">%s</a>\n\n",
+                        "IBC Transfer",
+                        getExplorerAccount(events.IBCTransferSender[0]),
+                        events.IBCTransferSender[0],
+                        getAccountName(events.IBCTransferSender[0]),
+                        getExplorerAccount(events.IBCTransferReciever[0]),
+                        events.IBCTransferReciever[0],
+                        getAccountName(events.IBCTransferReciever[0]),
+                        fundExplorerTx,
+                        events.TxHash[0],
+                        denomToAmount(events.TransferAmount[1]))
+
+                } else if len(events.MessageAction) >= 2 {
+                    // Other Chain > FUND IBC
+                    if events.MessageAction[1] == "/ibc.core.channel.v1.MsgRecvPacket" {
+                        resp <- fmt.Sprintf("‎\n<b>⚛️%s⚛️</b>\n\n<b>Sender:</b> <a href=\"%s%s\">%s</a>\n<b>Reciever:</b> <a href=\"%s%s\">%s</a>\n<b>Amount:</b> <a href=\"%s%s\">%s</a>\n\n",
+                            "IBC Transfer",
+                            getExplorerAccount(events.IBCForeignSender[0]),
+                            events.IBCForeignSender[0],
+                            getAccountName(events.IBCForeignSender[0]),
+                            getExplorerAccount(events.TransferRecipient[1]),
+                            events.TransferRecipient[1],
+                            getAccountName(events.TransferRecipient[1]),
+                            fundExplorerTx,
+                            events.TxHash[0],
+                            denomToAmount(events.TransferAmount[1]))
                     }
                 }
             }
@@ -141,10 +185,7 @@ func main() {
     }()
     select {
     case <- done:
-        fmt.Printf("Done")
-        return
-    case <- interrupt:
-        fmt.Printf("Interrupt Detected, Done")
+        log.Printf("Done")
         return
     }
 }

@@ -41,6 +41,7 @@ func main() {
 
     go func(){
         defer close(done)      
+        log.Println("Listening for msgs...")
         for {
             _,m,err := c.ReadMessage()
             if err != nil{
@@ -55,7 +56,8 @@ func main() {
             if len(res.Result.Events.MessageAction) >= 1 {
                 action = res.Result.Events.MessageAction[0]
                 if action != "/mainchain.beacon.v1.MsgRecordBeaconTimestamp" &&
-                    action != "/mainchain.wrkchain.v1.MsgRecordWrkChainBlock" {
+                    action != "/mainchain.wrkchain.v1.MsgRecordWrkChainBlock" &&
+                    action != "/cosmos.bank.v1beta1.MsgSend" {
                     fmt.Printf(string(m))
                 }
             }
