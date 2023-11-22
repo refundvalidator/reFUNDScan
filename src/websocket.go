@@ -1,7 +1,6 @@
 package main
 
 import (
-    "os"
     "log"
     "fmt"
     "encoding/json"
@@ -20,7 +19,7 @@ const (
 )
 
 // The JSON Response received by the websocket
-type WebsocketResponse struct {
+type JsonResponse struct {
     Result struct {
         Events struct {
             MessageAction []string `json:"message.action"` 
@@ -104,33 +103,40 @@ func denomToAmount(msg string) string {
 }
 
 // Connect to the websocket and serve the formatted responses to the given channel resp
-func Connect(resp chan string) {
+func Connect(resp chan string, restart chan bool) {
     c, _, err := websocket.DefaultDialer.Dial(Url, nil)  
     if err != nil{
-        log.Fatal("Failed to dial websocket: ", err) 
-        os.Exit(2)
+        log.Println("Failed to dial websocket: ", err) 
+        restart <- true
     } 
     defer c.Close()    
+    log.Println("Connected to websocket")
 
     subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='Tx'" } }`)
     err = c.WriteMessage(websocket.TextMessage, subscribe)
     if err != nil{
-        log.Fatal("Couldn't subscribe to websocket: " , err) 
-        os.Exit(2)
+        log.Println("Couldn't subscribe to websocket: " , err) 
+        restart <- true
     } 
+    log.Println("Subscribed to websocket")
 
     done := make(chan string)  
 
     go func(){
+        log.Println("Listening for messages")
         defer close(done)      
         for {
             _,m,err := c.ReadMessage()
             if err != nil{
-                log.Fatal("Failed to read json response: ", err) 
+                log.Println("Failed to read json response: ", err) 
+                restart <- true
+                break
             } 
-            var res WebsocketResponse // struct version of the json object
+            var res JsonResponse // struct version of the json object
             if err := json.Unmarshal(m,&res); err != nil {
-                log.Fatal("Couldn't unmarshal json response: ", err)
+                log.Println("Couldn't unmarshal json response: ", err)
+                restart <- true
+                break
             }
             events := res.Result.Events
             if len(events.MessageAction) >= 1 {
@@ -185,7 +191,7 @@ func Connect(resp chan string) {
     }()
     select {
     case <- done:
-        log.Printf("Done")
+        log.Println("Listener terminating")
         return
     }
 }

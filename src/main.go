@@ -21,7 +21,6 @@ func init(){
     flag.Parse()
     if ChatID == "" || BotKey == "" {
         log.Fatal("ChatID and BotKey required, --help for how to pass them through")
-        os.Exit(1)
     }
 }
 
@@ -31,11 +30,11 @@ func main(){
     signal.Notify(interrupt, os.Interrupt) 
 
     resp := make(chan string)
-    go Connect(resp)
+    restart := make(chan bool)
+    go Connect(resp, restart)
     bot, err := telegram.NewBotAPI(BotKey)
     if err != nil {
-        log.Fatal("Cannot connect to bot, check your BotKey")
-        os.Exit(2)
+        log.Fatal("Cannot connect to bot, check your BotKey or internet connection")
     }
     // bot.Debug = true
 
@@ -48,16 +47,19 @@ func main(){
                 msg.DisableWebPagePreview = true
                 _, err := bot.Send(msg)
                 if err != nil {
-                    log.Fatal("Could not sent message, check your ChatID")
-                    os.Exit(2)
+                    log.Println("Could not sent message, check your internet connection or ChatID")
                 }
                 log.Println(message)
+            case <- restart:
+                log.Println("Restarting websocket connection")
+                go Connect(resp, restart)
+
             }
         }
     }()
     select {
     case <- interrupt:
-        log.Printf("Interrupted")
+        log.Println("Interrupted")
         return
     }
 }
