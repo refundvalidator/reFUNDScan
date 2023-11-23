@@ -12,6 +12,8 @@ var (
     ChatID string
     BotKey string
     Url string
+    cg CoinGeckoResponse
+    vals ValidatorResponse
 )
 // Get flag values
 func init(){
@@ -38,6 +40,10 @@ func main(){
     }
     // bot.Debug = true
 
+    // AutoRefresh coin gecko data
+    go cg.autoRefresh()
+    go vals.autoRefresh()
+
     go func(){
         for {
             select {
@@ -53,7 +59,6 @@ func main(){
             case <- restart:
                 log.Println("Restarting websocket connection")
                 go Connect(resp, restart)
-
             }
         }
     }()
