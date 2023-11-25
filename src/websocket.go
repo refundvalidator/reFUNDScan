@@ -51,6 +51,8 @@ func Connect(resp chan string, restart chan bool) {
                 // TODO: Add rewards withdrawal, commission withdrawal,
                 // governance votes, validator creations, validator edits 
 
+                // Fix small amounts displaying as 0.00
+
                 if events.MessageAction[0] == "/cosmos.bank.v1beta1.MsgSend" {
                     // On Chain Transfers
                     msg := "‎" +
@@ -99,7 +101,7 @@ func Connect(resp chan string, restart chan bool) {
                 } else if res.Result.Events.MessageAction[0] == "/cosmos.staking.v1beta1.MsgUndelegate" {
                     // Undelegations
                     msg := "‎" +
-                        mkBold("\n💀️‍ Undelegate 💀") + 
+                        mkBold("\n💀 Undelegate 💀") + 
                         mkBold("\n\nValidator: ") +
                         mkAccountLink(events.UnbondValidator[0]) +
                         mkBold("\nDelegator: ") +
@@ -135,17 +137,17 @@ func Connect(resp chan string, restart chan bool) {
                         mkBold("\n\nValidator: ") +
                         mkAccountLink(events.WithdrawRewardsValidator[0]) +
                         mkBold("\nDelegators: \n")
+                    j := 0
                     for i, delegator := range events.MessageSender {
                         if i >= 2 {
-                            msg += fmt.Sprintf("\n%s\n%s\n", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[1]))
+                            if i % 2 != 0 {
+                                j += 1
+                                msg += fmt.Sprintf("\n%s\n%s\n", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[j]))
+                            }
                         }
                     }
-                    log.Println("Amounts:")
-                    log.Println(events.TransferAmount)
-                    log.Println("Delegators:")
-                    log.Println(events.MessageSender)
-                    log.Println("Hash:")
-                    log.Println(events.TxHash[0])
+                    msg += mkBold("\nFees paid by ")
+                    msg += mkAccountLink(events.WithdrawRewardsValidator[0]) + ": " + mkTranscationLink(events.TxHash[0], events.TransferAmount[0])
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
