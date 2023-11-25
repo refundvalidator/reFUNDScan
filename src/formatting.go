@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+    "encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,8 @@ import (
 )
 
 const (
+    icnsRest = "https://lcd.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"
+
     fundRestTx = "https://rest.unification.io/cosmos/tx/v1beta1/txs/"
     fundExplorerTx = "https://explorer.unification.io/transactions/"
 
@@ -74,6 +77,8 @@ func getMemo(hash string) string {
 // When given a wallet or validator address, returns the name associated with the wallet, if it has one
 // Otherwise returns a truncated version of the wallet address
 func getAccountName(msg string) string {
+
+    // Known account names
     named := map[string][]string{
         "BitForex 🏦": {"und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7", ""},
         "Poloniex 🏦" : {"und186slma7kkxlghwc3hzjr9gkqwhefhln5pw5k26",""},
@@ -95,11 +100,33 @@ func getAccountName(msg string) string {
         addr, _ := bech32.Encode("und",data)
         named[val.Description.Moniker] = []string{addr, val.OperatorAddress}
     }
+    // Check if name matches wallet or val addr
     for key, val := range named {
         if val[0] == msg || val[1] == msg {
             return key
         }
     }
+
+    // Check ICNS for name
+    var icns ICNS
+    query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
+    b64 := base64.StdEncoding.EncodeToString([]byte(query))
+    resp, err := http.Get("https://lcd.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64); 
+    if err != nil {
+        log.Println("Failed to get ICNS Response")
+    } 
+    defer resp.Body.Close()
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        fmt.Println("Failed to read ICNS response")
+    }
+    if err := json.Unmarshal(body, &icns); err != nil {
+        fmt.Println("Failed to unmarshal ICNS response")
+    }
+    if icns.Data.Name != "" {
+        return icns.Data.Name + " (ICNS)"
+    }
+
     // Return truncated addr if the addr isnt in the named map
     return fmt.Sprintf("%s...%s",msg[:7],msg[len(msg)-7:])
 }

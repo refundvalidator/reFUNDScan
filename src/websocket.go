@@ -64,6 +64,7 @@ func Connect(resp chan string, restart chan bool) {
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
+                    msg += "\n\n‎"
                     resp <- msg 
                 } else if res.Result.Events.MessageAction[0] == "/ibc.applications.transfer.v1.MsgTransfer" {
                     // FUND > Other Chain IBC
@@ -78,6 +79,7 @@ func Connect(resp chan string, restart chan bool) {
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
+                    msg += "\n\n‎"
                     resp <- msg 
                 } else if events.MessageAction[0] == "/cosmos.authz.v1beta1.MsgExec" {
                     // REStake Transactions
@@ -88,12 +90,19 @@ func Connect(resp chan string, restart chan bool) {
                         mkBold("\nDelegators: ")
                     for i, delegator := range events.MessageSender {
                         if i >= 2 {
-                            msg += fmt.Sprintf("\n%s : %s", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[1]))
+                            msg += fmt.Sprintf("\n%s: \n%s\n", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[1]))
                         }
                     }
+                    log.Println("Amounts:")
+                    log.Println(events.TransferAmount)
+                    log.Println("Delegators:")
+                    log.Println(events.MessageSender)
+                    log.Println("Hash:")
+                    log.Println(events.TxHash[0])
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
+                    msg += "\n\n‎"
                     resp <- msg 
                 } else if len(events.MessageAction) >= 2 {
                     // Other Chain > FUND IBC
@@ -109,6 +118,7 @@ func Connect(resp chan string, restart chan bool) {
                         if memo := getMemo(events.TxHash[0]); memo != "" {
                             msg += mkBold("\nMemo: " + memo)
                         }
+                        msg += "\n\n‎"
                         resp <- msg 
                     }
                 }

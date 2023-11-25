@@ -14,6 +14,13 @@ const (
     fundExplorerValidators = "https://rest.unification.io/cosmos/staking/v1beta1/validators?pagination.limit=100000"
 )
 
+// The JSON Response from an ICNS query
+type ICNS struct {
+	Data struct {
+		Name string `json:"name"`
+	} `json:"data"`
+}
+
 // The JSON Response received by the websocket
 type WebsocketResponse struct {
     Result struct {
