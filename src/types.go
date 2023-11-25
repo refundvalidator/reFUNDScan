@@ -2,25 +2,19 @@ package main
 
 import (
 	"encoding/json"
-    "errors"
+	"errors"
 	"io"
 	"log"
 	"net/http"
 	"time"
 )
 
-const (
-    fundCoinGecko = "https://api.coingecko.com/api/v3/coins/unification"
-    fundExplorerValidators = "https://rest.unification.io/cosmos/staking/v1beta1/validators?pagination.limit=100000"
-)
-
 // The JSON Response from an ICNS query
-type ICNS struct {
+type ICNSResponse struct {
 	Data struct {
 		Name string `json:"name"`
 	} `json:"data"`
 }
-
 // The JSON Response received by the websocket
 type WebsocketResponse struct {
     Result struct {
@@ -35,6 +29,13 @@ type WebsocketResponse struct {
             TxHash []string `json:"tx.hash"`
             WithdrawRewardsValidator []string `json:"withdraw_rewards.validator"`
             MessageSender []string `json:"message.sender"`
+            DelegateAmount []string `json:"delegate.amount"`
+            DelegateValidator []string `json:"delegate.validator"`
+            UnbondValidator []string `json:"unbond.validator"`
+            UnbondAmount []string `json:"unbond.amount"`
+            RedelegateSourceValidator []string `json:"redelegate.source_validator"`
+            RedelegateDestinationValidator []string `json:"redelegate.destination_validator"`
+            RedelegateAmount []string `json:"redelegate.amount"`
         } `json:"events"`
     } `json:"result"`
 }
@@ -83,7 +84,7 @@ type ValidatorResponse struct {
 	} `json:"pagination"`
 }
 func (vals *ValidatorResponse) getData() error {
-    resp, err := http.Get(fundExplorerValidators); 
+    resp, err := http.Get(RestUrl + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"); 
     if err != nil {
         return errors.New("Failed to get Validator Information")
     } 
@@ -119,7 +120,7 @@ type CoinGeckoResponse struct {
     } `json:"market_data"`
 }
 func (cg *CoinGeckoResponse) getData() error {
-    resp, err := http.Get(fundCoinGecko); 
+    resp, err := http.Get("https://api.coingecko.com/api/v3/coins/unification"); 
     if err != nil {
         return errors.New("Failed to get CoinGecko Information")
     } 

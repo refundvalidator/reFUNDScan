@@ -10,7 +10,7 @@ import (
 
 // Connect to the websocket and serve the formatted responses to the given channel resp
 func Connect(resp chan string, restart chan bool) {
-    c, _, err := websocket.DefaultDialer.Dial(Url, nil)  
+    c, _, err := websocket.DefaultDialer.Dial(WebsocketUrl, nil)  
     if err != nil{
         log.Println("Failed to dial websocket: ", err) 
         restart <- true
@@ -48,8 +48,8 @@ func Connect(resp chan string, restart chan bool) {
             }
             events := res.Result.Events
             if len(events.MessageAction) >= 1 {
-                // TODO: Add rewards withdrawal, commission withdrawal, delegations, undelegations
-                // governance votes, validator creations, validator edits, memos
+                // TODO: Add rewards withdrawal, commission withdrawal,
+                // governance votes, validator creations, validator edits 
 
                 if events.MessageAction[0] == "/cosmos.bank.v1beta1.MsgSend" {
                     // On Chain Transfers
@@ -64,7 +64,7 @@ func Connect(resp chan string, restart chan bool) {
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
-                    msg += "\n\n‎"
+                    msg += "\n‎"
                     resp <- msg 
                 } else if res.Result.Events.MessageAction[0] == "/ibc.applications.transfer.v1.MsgTransfer" {
                     // FUND > Other Chain IBC
@@ -79,7 +79,54 @@ func Connect(resp chan string, restart chan bool) {
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
-                    msg += "\n\n‎"
+                    msg += "\n‎"
+                    resp <- msg 
+                } else if res.Result.Events.MessageAction[0] == "/cosmos.staking.v1beta1.MsgDelegate" {
+                    // Delegations
+                    msg := "‎" +
+                        mkBold("\n❤️ Delegate ❤️") + 
+                        mkBold("\n\nValidator: ") +
+                        mkAccountLink(events.DelegateValidator[0]) +
+                        mkBold("\nDelegator: ") +
+                        mkAccountLink(events.MessageSender[0]) +
+                        mkBold("\nAmount: ") +
+                        mkTranscationLink(events.TxHash[0],events.DelegateAmount[0])
+                    if memo := getMemo(events.TxHash[0]); memo != "" {
+                        msg += mkBold("\nMemo: " + memo)
+                    }
+                    msg += "\n‎"
+                    resp <- msg 
+                } else if res.Result.Events.MessageAction[0] == "/cosmos.staking.v1beta1.MsgUndelegate" {
+                    // Undelegations
+                    msg := "‎" +
+                        mkBold("\n💀️‍ Undelegate 💀") + 
+                        mkBold("\n\nValidator: ") +
+                        mkAccountLink(events.UnbondValidator[0]) +
+                        mkBold("\nDelegator: ") +
+                        mkAccountLink(events.MessageSender[0]) +
+                        mkBold("\nAmount: ") +
+                        mkTranscationLink(events.TxHash[0],events.UnbondAmount[0])
+                    if memo := getMemo(events.TxHash[0]); memo != "" {
+                        msg += mkBold("\nMemo: " + memo)
+                    }
+                    msg += "\n‎"
+                    resp <- msg 
+                } else if res.Result.Events.MessageAction[0] == "/cosmos.staking.v1beta1.MsgBeginRedelegate" {
+                    // Redelegations
+                    msg := "‎" +
+                        mkBold("\n💞 Redelegate 💞") + 
+                        mkBold("\n\nValidators: ") +
+                        mkAccountLink(events.RedelegateSourceValidator[0]) +
+                        mkBold(" 👉 ") +
+                        mkAccountLink(events.RedelegateDestinationValidator[0]) +
+                        mkBold("\nDelegator: ") +
+                        mkAccountLink(events.MessageSender[0]) +
+                        mkBold("\nAmount: ") +
+                        mkTranscationLink(events.TxHash[0],events.RedelegateAmount[0])
+                    if memo := getMemo(events.TxHash[0]); memo != "" {
+                        msg += mkBold("\nMemo: " + memo)
+                    }
+                    msg += "\n‎"
                     resp <- msg 
                 } else if events.MessageAction[0] == "/cosmos.authz.v1beta1.MsgExec" {
                     // REStake Transactions
@@ -87,10 +134,10 @@ func Connect(resp chan string, restart chan bool) {
                         mkBold("\n♻️ REStake ♻️") +
                         mkBold("\n\nValidator: ") +
                         mkAccountLink(events.WithdrawRewardsValidator[0]) +
-                        mkBold("\nDelegators: ")
+                        mkBold("\nDelegators: \n")
                     for i, delegator := range events.MessageSender {
                         if i >= 2 {
-                            msg += fmt.Sprintf("\n%s: \n%s\n", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[1]))
+                            msg += fmt.Sprintf("\n%s\n%s\n", mkAccountLink(delegator) ,mkTranscationLink(events.TxHash[0],events.TransferAmount[1]))
                         }
                     }
                     log.Println("Amounts:")
@@ -102,7 +149,7 @@ func Connect(resp chan string, restart chan bool) {
                     if memo := getMemo(events.TxHash[0]); memo != "" {
                         msg += mkBold("\nMemo: " + memo)
                     }
-                    msg += "\n\n‎"
+                    msg += "\n‎"
                     resp <- msg 
                 } else if len(events.MessageAction) >= 2 {
                     // Other Chain > FUND IBC
@@ -118,7 +165,7 @@ func Connect(resp chan string, restart chan bool) {
                         if memo := getMemo(events.TxHash[0]); memo != "" {
                             msg += mkBold("\nMemo: " + memo)
                         }
-                        msg += "\n\n‎"
+                        msg += "\n‎"
                         resp <- msg 
                     }
                 }

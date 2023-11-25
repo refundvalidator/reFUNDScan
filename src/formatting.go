@@ -15,11 +15,10 @@ import (
 )
 
 const (
-    icnsRest = "https://lcd.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"
-
     fundRestTx = "https://rest.unification.io/cosmos/tx/v1beta1/txs/"
     fundExplorerTx = "https://explorer.unification.io/transactions/"
 
+    fundExplorerValidators = "https://explorer.unification.io/validators/"
     fundExplorerAccount = "https://explorer.unification.io/accounts/"
     osmoExplorerAccount = "https://www.mintscan.io/osmosis/address/"
     gravExplorerAccount = "https://www.mintscan.io/gravity-bridge/address/"
@@ -93,11 +92,18 @@ func getAccountName(msg string) string {
         "Foundation Wallet #2 🏛️" : {"und1pyqttnfyqujh4hvjhcx45mz8svptp6f40n4u3p",""},
         "Foundation Wallet #3 🏛️" : {"und1hdn830wndtquqxzaz3rds7r7hqgpsg5q9ggxpk",""},
         "Foundation Wallet #4 🏛️" : {"und1cwhkh2ag8w2lf3ngd509wzy43ljxkkn3qe3q4z",""},
+        "The Arbitrager 🕵️" : {"und1d268glh7hns5p6p4yxeuhqqg5v7aygn84u336u",""},
     }
     // Convert undval to und1 addresses and append to map
     for _, val := range vals.Validators {
-        _, data, _ := bech32.Decode(val.OperatorAddress)
-        addr, _ := bech32.Encode("und",data)
+        _, data, err := bech32.Decode(val.OperatorAddress)
+        if err != nil {
+            log.Println("Could not decode bech32 address") 
+        }
+        addr, err := bech32.Encode("und",data)
+        if err != nil {
+            log.Println("Could not encode bech32 address")
+        }
         named[val.Description.Moniker] = []string{addr, val.OperatorAddress}
     }
     // Check if name matches wallet or val addr
@@ -108,10 +114,10 @@ func getAccountName(msg string) string {
     }
 
     // Check ICNS for name
-    var icns ICNS
+    var icns ICNSResponse
     query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
-    resp, err := http.Get("https://lcd.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64); 
+    resp, err := http.Get(ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64); 
     if err != nil {
         log.Println("Failed to get ICNS Response")
     } 
@@ -159,12 +165,14 @@ func denomToAmount(msg string) string {
         // Fund
         numericalAmount = math.Round((numericalAmount/1000000000)*100)/100
         return formatter.Sprintf("%.2f FUND ($%.2f USD)", numericalAmount, (cg.MarketData.CurrentPrice.USD * numericalAmount))
-
     case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
         // Osmo
         numericalAmount = math.Round((numericalAmount/1000000)*100)/100
-        return formatter.Sprintf("%.2f FUND ($%.2f USD)", numericalAmount)
-
+        return formatter.Sprintf("%.2f OSMO", numericalAmount)
+    case "ibc/C950356239AD2A205DE09FDF066B1F9FF19A7CA7145EA48A5B19B76EE47E52F7":
+        // Grav
+        numericalAmount = math.Round((numericalAmount/1000000)*100)/100
+        return formatter.Sprintf("%.2f GRAV", numericalAmount)
     default:
         return "Unknown IBC"
     }

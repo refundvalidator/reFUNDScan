@@ -9,9 +9,14 @@ import (
     telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 var (
+    // Flags
     ChatID string
     BotKey string
-    Url string
+    WebsocketUrl string
+    RestUrl string
+    ICNSUrl string
+
+    // Persistent json responses
     cg CoinGeckoResponse
     vals ValidatorResponse
 )
@@ -19,7 +24,9 @@ var (
 func init(){
     flag.StringVar(&ChatID,"chid", "", "ChatID for your Channel\nExample: @MyAwesomeChannel")
     flag.StringVar(&BotKey,"api", "", "Bot API Key from the BotFather")
-    flag.StringVar(&Url,"url", "wss://rpc1.unification.io/websocket", "URL for websocket connection")
+    flag.StringVar(&WebsocketUrl,"ws", "wss://rpc1.unification.io/websocket", "URL for blockchain websocket connection")
+    flag.StringVar(&RestUrl,"rest", "https://rest.unification.io", "URL for blockchain REST connection")
+    flag.StringVar(&ICNSUrl,"icns", "https://lcd.osmosis.zone", "URL for ICNS REST connection")
     flag.Parse()
     if ChatID == "" || BotKey == "" {
         log.Fatal("ChatID and BotKey required, --help for how to pass them through")
