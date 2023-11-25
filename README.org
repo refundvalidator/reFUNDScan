@@ -1,2 +1,48 @@
 #+TITLE: reFUNDScan
 #+DESCRIPTION: A WIP Project
+#+STARTUP: inlineimages
+Telegram bot made to monitor transactions on the unification mainchain
+
+** Capabilities
+*** Current Features:
+- Transfers
+- IBC Transfers
+- ICNS Namings
+- Delegations
+- Undelegations
+- Redelegations
+- REStake Transactions
+*** Planned:
+- Governence Votes
+- Governence Progress
+- Validator Creations
+- Validator Edits
+- Validator Status/Jailings
+- Validator Unjails
+** Build and Run
+reFUNDScan is open-source and can be easily run by anybody, the main channel is hosted at @reFUNDScan
+
+To build the bot yourself simply clone the repo:
+#+begin_src bash
+git clone https://github.com/refundvalidator/reFUNDScan
+#+end_src
+Then run:
+#+begin_src bash
+cd reFUNDScan/src
+go run . -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID"
+#+end_src
+You can also pass your own websocket and rest endpoints if you'd like
+#+begin_src bash
+go run . -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID" -ws "wss://rpc1.unification.io/websocket" -rest "https://rest.unification.io"
+#+end_src
+Or you can compile the binary yourself
+#+begin_src bash
+go build -o bot .
+./bot -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID"
+#+end_src
+Pre-compiled binaries can be found in the releases section of this repo
+** reFUNDScan in action
+[[./assets/example.png]]
+
+
+
