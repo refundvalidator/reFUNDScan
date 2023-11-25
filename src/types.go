@@ -9,13 +9,25 @@ import (
 	"time"
 )
 
-// The JSON Response from an ICNS query
 type ICNSResponse struct {
 	Data struct {
 		Name string `json:"name"`
 	} `json:"data"`
 }
-// The JSON Response received by the websocket
+type TxResponse struct {
+    Tx struct {
+        Body struct {
+            Memo string `json:"memo"`
+        } `json:"body"`
+    }
+}
+type CoinGeckoResponse struct {
+    MarketData struct{
+        CurrentPrice struct {
+            USD float64 `json:"usd"`
+        } `json:"current_price"`
+    } `json:"market_data"`
+}
 type WebsocketResponse struct {
     Result struct {
         Events struct {
@@ -28,6 +40,9 @@ type WebsocketResponse struct {
             TransferAmount []string `json:"transfer.amount"`
             TxHash []string `json:"tx.hash"`
             WithdrawRewardsValidator []string `json:"withdraw_rewards.validator"`
+            WithdrawRewardsDelegator []string `json:"withdraw_rewards.delegator"`
+            WithdrawRewardsAmount []string `json:"withdraw_rewards.amount"`
+            WithdrawCommissionAmount []string `json:"withdraw_commission.amount"`
             MessageSender []string `json:"message.sender"`
             DelegateAmount []string `json:"delegate.amount"`
             DelegateValidator []string `json:"delegate.validator"`
@@ -39,15 +54,6 @@ type WebsocketResponse struct {
         } `json:"events"`
     } `json:"result"`
 }
-// The JSON response from a REST TX Query
-type TxResponse struct {
-    Tx struct {
-        Body struct {
-            Memo string `json:"memo"`
-        } `json:"body"`
-    }
-} 
-// The JSON response from a REST ValidatorSet Query
 type ValidatorResponse struct {
 	Validators []struct {
 		OperatorAddress string `json:"operator_address"`
@@ -83,67 +89,30 @@ type ValidatorResponse struct {
 		Total   string `json:"total"`
 	} `json:"pagination"`
 }
-func (vals *ValidatorResponse) getData() error {
-    resp, err := http.Get(RestUrl + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"); 
+func getData(url string, container interface{}) error {
+    resp, err := http.Get(url); 
     if err != nil {
-        return errors.New("Failed to get Validator Information")
+        return errors.Join(err,errors.New("Failed to get Reponse Information from: " + url))
     } 
     defer resp.Body.Close()
     body, err := io.ReadAll(resp.Body)
     if err != nil {
-        return errors.New("Failed to read Validator Information")
+        return errors.Join(err,errors.New("Failed to read Response Information from: " + url))
     }
-    if err := json.Unmarshal(body, vals); err != nil {
-        return errors.New("Failed to unmarshall Validator Information")
+    if err := json.Unmarshal(body, container); err != nil {
+        return errors.Join(err,errors.New("Failed to unmarshall Response Information from: " + url))
     }
     return nil
 }
-func (vals *ValidatorResponse) autoRefresh(){
+func autoRefresh(url string, container interface{}){
     ticker := time.NewTicker(time.Second * 60)
-    if err := vals.getData(); err != nil {
+    if err := getData(url, container); err != nil {
         log.Println(err)
     }
     for {
         select {
         case <- ticker.C:
-            if err := cg.getData(); err != nil {
-                log.Println(err)
-            }
-        }
-    }
-}
-type CoinGeckoResponse struct {
-    MarketData struct{
-        CurrentPrice struct {
-            USD float64 `json:"usd"`
-        } `json:"current_price"`
-    } `json:"market_data"`
-}
-func (cg *CoinGeckoResponse) getData() error {
-    resp, err := http.Get("https://api.coingecko.com/api/v3/coins/unification"); 
-    if err != nil {
-        return errors.New("Failed to get CoinGecko Information")
-    } 
-    defer resp.Body.Close()
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return errors.New("Failed to read CoinGecko Information")
-    }
-    if err := json.Unmarshal(body, cg); err != nil {
-        return errors.New("Failed to unmarshall CoinGecko Information")
-    }
-    return nil
-}
-
-func (cg *CoinGeckoResponse) autoRefresh() {
-    ticker := time.NewTicker(time.Second * 60)
-    if err := cg.getData(); err != nil {
-        log.Println(err)
-    }
-    for {
-        select {
-        case <- ticker.C:
-            if err := cg.getData(); err != nil {
+            if err := getData(url, container); err != nil {
                 log.Println(err)
             }
         }

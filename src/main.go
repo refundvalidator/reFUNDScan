@@ -5,6 +5,7 @@ import (
     "os"
     "os/signal"
     "flag"
+    "time"
 
     telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -48,8 +49,8 @@ func main(){
     // bot.Debug = true
 
     // AutoRefresh coin gecko data
-    go cg.autoRefresh()
-    go vals.autoRefresh()
+    go autoRefresh("https://api.coingecko.com/api/v3/coins/unification",&cg)
+    go autoRefresh(RestUrl + "/cosmos/staking/v1beta1/validators?pagination.limit=100000",&vals)
 
     go func(){
         for {
@@ -64,7 +65,8 @@ func main(){
                 }
                 log.Println(message)
             case <- restart:
-                log.Println("Restarting websocket connection")
+                log.Println("Restarting websocket connection in 60 seconds")
+                time.Sleep(time.Second * 60)
                 go Connect(resp, restart)
             }
         }

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
     "encoding/base64"
 	"fmt"
-	"io"
 	"log"
 	"math"
-	"net/http"
 	"strconv"
     "github.com/btcsuite/btcutil/bech32"
     "golang.org/x/text/message"
@@ -54,24 +51,13 @@ func mkTranscationLink(hash string, amount string) string {
 // Searches rest endpoints for a memo on the transaction, if not available returns an empty string
 func getMemo(hash string) string {
     var tx TxResponse
-    resp, err := http.Get(fundRestTx + hash)
+    err := getData(fundRestTx + hash, &tx)
     if err != nil {
-        log.Println("Could TX rest response: ", err)
-        return ""
-    }
-    defer resp.Body.Close()
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        log.Println("Failed to read TX rest response: ", err)
-        return ""
-    }
-    if err := json.Unmarshal(body, &tx); err != nil {
-        log.Println("Failed to unmarshal TX rest response: ", err)
+        log.Println("Failed to get TX rest response: ", err)
         return ""
     }
     return tx.Tx.Body.Memo
 }
-
 
 // When given a wallet or validator address, returns the name associated with the wallet, if it has one
 // Otherwise returns a truncated version of the wallet address
@@ -117,17 +103,9 @@ func getAccountName(msg string) string {
     var icns ICNSResponse
     query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
-    resp, err := http.Get(ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64); 
+    err := getData(ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64, &icns)
     if err != nil {
-        log.Println("Failed to get ICNS Response")
-    } 
-    defer resp.Body.Close()
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        fmt.Println("Failed to read ICNS response")
-    }
-    if err := json.Unmarshal(body, &icns); err != nil {
-        fmt.Println("Failed to unmarshal ICNS response")
+        log.Println("Failed to get ICNS response ", err)
     }
     if icns.Data.Name != "" {
         return icns.Data.Name + " (ICNS)"
@@ -137,7 +115,27 @@ func getAccountName(msg string) string {
     return fmt.Sprintf("%s...%s",msg[:7],msg[len(msg)-7:])
 }
 
+func denomsToAmount() func(string) string{
+    var total float64
+    return func(msg string) string {
+        var amount string
+        var denom string
 
+        switch msg[len(msg)-4:] {
+        case "nund":
+            denom = "nund"
+            amount = msg[:len(msg)-4]
+        default:
+            // Other IBC denoms such as ibc/xxxx
+            // IBC denom hash is always 64 chars + 4 chars for the ibc/
+            denom = msg[len(msg)-68:]
+            amount = msg[:len(msg)-68]
+        }
+        numericalAmount, _ := strconv.ParseFloat(amount, 64)
+        total += numericalAmount
+        return fmt.Sprintf("%f%s",total,denom)
+    }
+}
 
 // Converts the denom to the formatted amount
 // E.G. 1000000000nund becomes 1.00 FUND
