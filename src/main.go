@@ -65,8 +65,8 @@ func main(){
                 }
                 log.Println(message)
             case <- restart:
-                log.Println("Restarting websocket connection in 60 seconds")
-                time.Sleep(time.Second * 60)
+                log.Println("Restarting websocket connection in 30 seconds")
+                time.Sleep(time.Second * 30)
                 go Connect(resp, restart)
             }
         }
