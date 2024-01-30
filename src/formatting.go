@@ -12,11 +12,11 @@ import (
 )
 
 const (
-    fundRestTx = "https://rest.unification.io/cosmos/tx/v1beta1/txs/"
-    fundExplorerTx = "https://explorer.unification.io/transactions/"
+    fundRestTx = "https://rest.starname.app/cosmos/tx/v1beta1/txs/"
+    fundExplorerTx = "https://ping.pub/starname/tx/"
 
-    fundExplorerValidators = "https://explorer.unification.io/validators/"
-    fundExplorerAccount = "https://explorer.unification.io/accounts/"
+    fundExplorerValidators = "https://ping.pub/starname/staking/validators/"
+    fundExplorerAccount = "https://ping.pub/starname/account/"
     osmoExplorerAccount = "https://www.mintscan.io/osmosis/address/"
     gravExplorerAccount = "https://www.mintscan.io/gravity-bridge/address/"
 )
@@ -28,8 +28,8 @@ func mkBold(msg string) string{
 
 // Returns and HTML formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
-    switch addr[:6]{
-    case "undval":
+    switch addr[:7]{
+    case "starval":
         return fmt.Sprintf("<a href=\"%s%s\">%s</a>",fundExplorerValidators,addr,getAccountName(addr))
     }
     switch addr[:3]{
@@ -86,7 +86,7 @@ func getAccountName(msg string) string {
         if err != nil {
             log.Println("Could not decode bech32 address") 
         }
-        addr, err := bech32.Encode("und",data)
+        addr, err := bech32.Encode("star",data)
         if err != nil {
             log.Println("Could not encode bech32 address")
         }
@@ -122,8 +122,8 @@ func denomsToAmount() func(string) string{
         var denom string
 
         switch msg[len(msg)-4:] {
-        case "nund":
-            denom = "nund"
+        case "uiov":
+            denom = "uiov"
             amount = msg[:len(msg)-4]
         default:
             // Other IBC denoms such as ibc/xxxx
@@ -144,8 +144,8 @@ func denomToAmount(msg string) string {
     var denom string
 
     switch msg[len(msg)-4:] {
-    case "nund":
-        denom = "nund"
+    case "uiov":
+        denom = "uiov"
         amount = msg[:len(msg)-4]
     default:
         // Other IBC denoms such as ibc/xxxx
@@ -159,10 +159,10 @@ func denomToAmount(msg string) string {
     formatter := message.NewPrinter(language.English)
 
     switch denom {
-    case "nund":
+    case "uiov":
         // Fund
         numericalAmount = math.Round((numericalAmount/1000000000)*100)/100
-        return formatter.Sprintf("%.2f FUND ($%.2f USD)", numericalAmount, (cg.MarketData.CurrentPrice.USD * numericalAmount))
+        return formatter.Sprintf("%.2f IOV ($%.2f USD)", numericalAmount, (cg.MarketData.CurrentPrice.USD * numericalAmount))
     case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
         // Osmo
         numericalAmount = math.Round((numericalAmount/1000000)*100)/100

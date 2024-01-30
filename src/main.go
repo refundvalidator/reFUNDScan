@@ -49,7 +49,7 @@ func main(){
     // bot.Debug = true
 
     // AutoRefresh coin gecko data
-    go autoRefresh("https://api.coingecko.com/api/v3/coins/unification",&cg)
+    go autoRefresh("https://api.coingecko.com/api/v3/coins/starname",&cg)
     go autoRefresh(RestUrl + "/cosmos/staking/v1beta1/validators?pagination.limit=100000",&vals)
 
     go func(){
