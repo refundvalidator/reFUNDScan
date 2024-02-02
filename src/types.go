@@ -61,7 +61,7 @@ type WebsocketResponse struct {
 			DomainName      []string `json:"message.domain_name"`
 			Registerer      []string `json:"message.registerer"`
 			NewAccountOwner []string `json:"message.new_account_owner"`
-			NewDomainOwner  []Coin   `json:"message.new_domain_owner"`
+			NewDomainOwner  []string `json:"message.new_domain_owner"`
 		} `json:"events"`
 	} `json:"result"`
 }
