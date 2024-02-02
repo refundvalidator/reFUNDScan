@@ -205,7 +205,7 @@ func Connect(resp chan string, restart chan bool) {
 					// Starname specific
 					//⭐️
 				case "/starnamed.x.starname.v1beta1.MsgRegisterAccount":
-					// Register new Starname
+					// Register new Starname -> Account
 					msg := "‎" +
 						mkBold("\n⭐️️ Register Starname ⭐️️") +
 						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
@@ -215,7 +215,67 @@ func Connect(resp chan string, restart chan bool) {
 					}
 					msg += "\n‎"
 					resp <- msg
+				case "/starnamed.x.starname.v1beta1.MsgRegisterDomain":
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Register Starname ⭐️️") +
+						mkBold("\n\n*"+events.DomainName[0])
+					//mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				case "/starnamed.x.starname.v1beta1.MsgTransferAccount":
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0]) +
+						mkBold("\n\nSender: ") +
+						mkAccountLink(events.MessageSender[0]) +
+						mkBold("\n\nRecipient: ") +
+						mkAccountLink(events.NewAccountOwner[0])
+
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				case "/starnamed.x.starname.v1beta1.MsgTransferDomain":
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+						mkBold("\n\n*"+events.DomainName[0]) +
+						mkBold("\n\nSender: ") +
+						mkAccountLink(events.MessageSender[0]) +
+						mkBold("\n\nRecipient: ") +
+						mkAccountLink(events.NewDomainOwner[0])
+
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				case "/starnamed.x.starname.v1beta1.MsgDeleteAccount":
+					msg := "‎" +
+						mkBold("\n⭐️️ Delete Starname ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				case "/starnamed.x.escrow.v1beta1.MsgCreateEscrow":
+					msg := "‎" +
+						mkBold("\n⭐️️ List Starname for sale ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
 				}
+
 			}
 		}
 	}()

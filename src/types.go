@@ -28,6 +28,11 @@ type CoinGeckoResponse struct {
 		} `json:"current_price"`
 	} `json:"market_data"`
 }
+
+type Coin struct {
+	Denom  string `json:"denom"`
+	Amount string `json:"amount"`
+}
 type WebsocketResponse struct {
 	Result struct {
 		Events struct {
@@ -52,9 +57,11 @@ type WebsocketResponse struct {
 			RedelegateDestinationValidator []string `json:"redelegate.destination_validator"`
 			RedelegateAmount               []string `json:"redelegate.amount"`
 			// Starname
-			AccountName []string `json:"message.account_name"`
-			DomainName  []string `json:"message.domain_name"`
-			Registerer  []string `json:"message.registerer"`
+			AccountName     []string `json:"message.account_name"`
+			DomainName      []string `json:"message.domain_name"`
+			Registerer      []string `json:"message.registerer"`
+			NewAccountOwner []string `json:"message.new_account_owner"`
+			NewDomainOwner  []Coin   `json:"message.new_domain_owner"`
 		} `json:"events"`
 	} `json:"result"`
 }
