@@ -53,21 +53,21 @@ func Connect(resp chan string, restart chan bool) {
 
 				switch ev {
 
-				case "/cosmos.bank.v1beta1.MsgSend":
-					// On Chain Transfers
-					msg := "‎" +
-						mkBold("\n📬 Transfer 📬") +
-						mkBold("\n\nSender: ") +
-						mkAccountLink(events.TransferSender[0]) +
-						mkBold("\nReciever: ") +
-						mkAccountLink(events.TransferRecipient[1]) +
-						mkBold("\nAmount: ") +
-						mkTranscationLink(events.TxHash[0], events.TransferAmount[1])
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
+				//case "/cosmos.bank.v1beta1.MsgSend":
+				//	// On Chain Transfers
+				//	msg := "‎" +
+				//		mkBold("\n📬 Transfer 📬") +
+				//		mkBold("\n\nSender: ") +
+				//		mkAccountLink(events.TransferSender[0]) +
+				//		mkBold("\nReciever: ") +
+				//		mkAccountLink(events.TransferRecipient[1]) +
+				//		mkBold("\nAmount: ") +
+				//		mkTranscationLink(events.TxHash[0], events.TransferAmount[1])
+				//	if memo := getMemo(events.TxHash[0]); memo != "" {
+				//		msg += mkBold("\nMemo: " + memo)
+				//	}
+				//	msg += "\n‎"
+				//	resp <- msg
 				case "/ibc.applications.transfer.v1.MsgTransfer":
 					// FUND > Other Chain IBC
 					msg := "‎" +
