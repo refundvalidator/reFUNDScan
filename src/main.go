@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"time"
+    "strings"
 
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -20,7 +21,9 @@ var (
 )
 
 func init(){
-    flag.StringVar(&configpath, "config", "config.toml", "File path to your config.toml")
+    flag.StringVar(&configpath, "config", ".", "Directory containing your config.toml")
+    flag.Parse()
+    configpath = strings.TrimRight(configpath,"/")
     config.parseConfig(configpath)
 }
 

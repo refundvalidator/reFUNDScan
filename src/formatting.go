@@ -25,7 +25,7 @@ func mkBold(msg string) string{
 
 // Returns and HTML formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
-    switch addr[:7]{
+    switch addr[:len(config.Bech32Prefix + "val")]{
     case config.Bech32Prefix + "val":
         return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerValidators,addr,getAccountName(addr))
     }
@@ -118,10 +118,10 @@ func denomsToAmount() func(string) string{
         var amount string
         var denom string
 
-        switch msg[len(msg)-4:] {
+        switch msg[len(msg)-len(config.Denom):] {
         case config.Denom:
             denom = config.Denom
-            amount = msg[:len(msg)-4]
+            amount = msg[:len(msg)-len(config.Denom)]
         default:
             // Other IBC denoms such as ibc/xxxx
             // IBC denom hash is always 64 chars + 4 chars for the ibc/
@@ -140,10 +140,11 @@ func denomToAmount(msg string) string {
     var amount string
     var denom string
 
-    switch msg[len(msg)-4:] {
+    fmt.Println(msg)
+    switch msg[len(msg)-len(config.Denom):] {
     case config.Denom:
         denom = config.Denom
-        amount = msg[:len(msg)-4]
+        amount = msg[:len(msg)-len(config.Denom)]
     default:
         // Other IBC denoms such as ibc/xxxx
         // IBC denom hash is always 64 chars + 4 chars for the ibc/

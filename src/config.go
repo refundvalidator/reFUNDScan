@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
     "net/url"
+    "strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -69,7 +70,7 @@ func (cfg *Config) parseConfig(filePath string) {
     var chain ChainResponse
     var assets AssetsResponse
 
-	if _, err := toml.DecodeFile(filePath, &configfile); err != nil {
+	if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
 		log.Println("Error parsing TOML file:", err)
 		return
 	}
@@ -114,6 +115,11 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.Exponent = configfile.ChainInfo.Exponent
         cfg.CoinGeckoID = configfile.ChainInfo.CoinGeckoID
     }
+    //Format the information
+    cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
+    cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
+    cfg.ChainPrettyName = strings.ReplaceAll(cfg.ChainPrettyName," ","-")
+
     cfg.restTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
     cfg.explorerBase = fmt.Sprintf("https://ping.pub/%s/", cfg.ChainPrettyName)
     cfg.explorerTx = cfg.explorerBase + "tx/"
