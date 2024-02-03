@@ -1,0 +1,32 @@
+[telegram]
+# Channel ID for the channel to send messages to, ex @MyAwesomChannel
+chat-id = ""
+# Telegram bot token given by the botfather
+api = ""
+
+[chain]
+# The name of the chain as it appears in the cosmos chain registry
+name = "unification"
+
+[icns]
+# Rest URL to query for ICNS naming
+url = "https://lcd.osmosis.zone"
+
+[chaininfo]
+# If default = true, reFUNDScan will use the information given by the cosmos chain registry for the chain name
+default = true 
+# The following will be ignored if default=true
+pretty-name = "Starname"
+coin = "IOV"
+denom = "uiov"
+exponent = 6
+coin-gecko-id = "starname"
+bech32-prefix = "star"
+
+[connections]
+# If default = true, reFUNDScan will use the first mentioned RPC and REST connections
+# given by the cosmos chain registry for the chain name
+default = true
+# The following will be ignored if default=true
+rest = "https://rest.starname.app"
+websocket = "wss://rpc.starname.app/websocket"

@@ -10,7 +10,7 @@ import (
 
 // Connect to the websocket and serve the formatted responses to the given channel resp
 func Connect(resp chan string, restart chan bool) {
-    c, _, err := websocket.DefaultDialer.Dial(WebsocketUrl, nil)  
+    c, _, err := websocket.DefaultDialer.Dial(config.WebsocketURL, nil)  
     if err != nil{
         log.Println("Failed to dial websocket: ", err) 
         restart <- true

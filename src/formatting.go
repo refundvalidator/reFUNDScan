@@ -1,22 +1,19 @@
 package main
 
 import (
-    "encoding/base64"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"math"
 	"strconv"
-    "github.com/btcsuite/btcutil/bech32"
-    "golang.org/x/text/message"
-    "golang.org/x/text/language"
+	"strings"
+
+	"github.com/btcsuite/btcutil/bech32"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
-const (
-    fundRestTx = "https://rest.starname.app/cosmos/tx/v1beta1/txs/"
-    fundExplorerTx = "https://ping.pub/starname/tx/"
-
-    fundExplorerValidators = "https://ping.pub/starname/staking/validators/"
-    fundExplorerAccount = "https://ping.pub/starname/account/"
+var (
     osmoExplorerAccount = "https://www.mintscan.io/osmosis/address/"
     gravExplorerAccount = "https://www.mintscan.io/gravity-bridge/address/"
 )
@@ -29,8 +26,8 @@ func mkBold(msg string) string{
 // Returns and HTML formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
     switch addr[:7]{
-    case "starval":
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",fundExplorerValidators,addr,getAccountName(addr))
+    case config.Bech32Prefix + "val":
+        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerValidators,addr,getAccountName(addr))
     }
     switch addr[:3]{
     case "osm":
@@ -38,20 +35,20 @@ func mkAccountLink(addr string) string{
     case "gra":
         return fmt.Sprintf("<a href=\"%s%s\">%s</a>",gravExplorerAccount,addr,getAccountName(addr))
     default:
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",fundExplorerAccount,addr,getAccountName(addr))
+        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerAccount,addr,getAccountName(addr))
     }
 }
 
 // Returns a HTML formatted hyprlink for a transaction when given a TX Hash with an amount
 func mkTranscationLink(hash string, amount string) string {
-    return fmt.Sprintf("<a href=\"%s%s\">%s</a>",fundExplorerTx,hash,denomToAmount(amount))
+    return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerTx,hash,denomToAmount(amount))
 }
 
 // When given a transaction hash
 // Searches rest endpoints for a memo on the transaction, if not available returns an empty string
 func getMemo(hash string) string {
     var tx TxResponse
-    err := getData(fundRestTx + hash, &tx)
+    err := getData(config.restTx + hash, &tx)
     if err != nil {
         log.Println("Failed to get TX rest response: ", err)
         return ""
@@ -86,7 +83,7 @@ func getAccountName(msg string) string {
         if err != nil {
             log.Println("Could not decode bech32 address") 
         }
-        addr, err := bech32.Encode("star",data)
+        addr, err := bech32.Encode(config.Bech32Prefix,data)
         if err != nil {
             log.Println("Could not encode bech32 address")
         }
@@ -103,7 +100,7 @@ func getAccountName(msg string) string {
     var icns ICNSResponse
     query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
-    err := getData(ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64, &icns)
+    err := getData(config.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64, &icns)
     if err != nil {
         log.Println("Failed to get ICNS response ", err)
     }
@@ -122,8 +119,8 @@ func denomsToAmount() func(string) string{
         var denom string
 
         switch msg[len(msg)-4:] {
-        case "uiov":
-            denom = "uiov"
+        case config.Denom:
+            denom = config.Denom
             amount = msg[:len(msg)-4]
         default:
             // Other IBC denoms such as ibc/xxxx
@@ -144,8 +141,8 @@ func denomToAmount(msg string) string {
     var denom string
 
     switch msg[len(msg)-4:] {
-    case "uiov":
-        denom = "uiov"
+    case config.Denom:
+        denom = config.Denom
         amount = msg[:len(msg)-4]
     default:
         // Other IBC denoms such as ibc/xxxx
@@ -159,10 +156,11 @@ func denomToAmount(msg string) string {
     formatter := message.NewPrinter(language.English)
 
     switch denom {
-    case "uiov":
+    case config.Denom:
         // Fund
-        numericalAmount = math.Round((numericalAmount/1000000000)*100)/100
-        return formatter.Sprintf("%.2f IOV ($%.2f USD)", numericalAmount, (cg.MarketData.CurrentPrice.USD * numericalAmount))
+        exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Exponent), 64)
+        numericalAmount = math.Round((numericalAmount/exp)*100)/100
+        return formatter.Sprintf("%.2f %s ($%.2f USD)", numericalAmount, config.Coin ,(cg.MarketData.CurrentPrice.USD * numericalAmount))
     case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
         // Osmo
         numericalAmount = math.Round((numericalAmount/1000000)*100)/100

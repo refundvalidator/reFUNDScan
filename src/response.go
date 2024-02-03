@@ -8,7 +8,27 @@ import (
 	"net/http"
 	"time"
 )
-
+type AssetsResponse struct {
+	Assets    []struct {
+		DenomUnits  []struct {
+			Denom    string `json:"denom"`
+			Exponent int    `json:"exponent"`
+		} `json:"denom_units"`
+		CoingeckoID string `json:"coingecko_id"`
+	} `json:"assets"`
+}
+type ChainResponse struct {
+	PrettyName   string   `json:"pretty_name"`
+    Bech32Prefix string `json:"bech32_prefix"`
+	Apis struct {
+		RPC []struct {
+			Address  string `json:"address"`
+		} `json:"rpc"`
+		Rest []struct {
+			Address  string `json:"address"`
+		} `json:"rest"`
+	} `json:"apis"`
+}
 type ICNSResponse struct {
 	Data struct {
 		Name string `json:"name"`
