@@ -15,6 +15,7 @@ type AssetsResponse struct {
 			Exponent int    `json:"exponent"`
 		} `json:"denom_units"`
 		CoingeckoID string `json:"coingecko_id"`
+        Coin        string `json:"symbol"`
 	} `json:"assets"`
 }
 type ChainResponse struct {
@@ -40,6 +41,13 @@ type TxResponse struct {
             Memo string `json:"memo"`
         } `json:"body"`
     }
+}
+// Only used for verifying a valid rest url response at startup
+type RestResponse struct {
+    Supply []struct {
+        Denom  string `json:"denom"`
+        Amount string `json:"amount"`
+    } `json:"supply"`
 }
 type CoinGeckoResponse struct {
     MarketData struct{

@@ -25,6 +25,7 @@ func init(){
     flag.Parse()
     configpath = strings.TrimRight(configpath,"/")
     config.parseConfig(configpath)
+    // config.showConfig()
 }
 
 // Start the telegram bot and listen for messages from the resp channel

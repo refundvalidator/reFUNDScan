@@ -27,7 +27,7 @@ func mkBold(msg string) string{
 func mkAccountLink(addr string) string{
     switch addr[:len(config.Bech32Prefix + "val")]{
     case config.Bech32Prefix + "val":
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerValidators,addr,getAccountName(addr))
+        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerValidator,addr,getAccountName(addr))
     }
     switch addr[:3]{
     case "osm":
@@ -35,20 +35,20 @@ func mkAccountLink(addr string) string{
     case "gra":
         return fmt.Sprintf("<a href=\"%s%s\">%s</a>",gravExplorerAccount,addr,getAccountName(addr))
     default:
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerAccount,addr,getAccountName(addr))
+        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerAccount,addr,getAccountName(addr))
     }
 }
 
 // Returns a HTML formatted hyprlink for a transaction when given a TX Hash with an amount
 func mkTranscationLink(hash string, amount string) string {
-    return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.explorerTx,hash,denomToAmount(amount))
+    return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerTx,hash,denomToAmount(amount))
 }
 
 // When given a transaction hash
 // Searches rest endpoints for a memo on the transaction, if not available returns an empty string
 func getMemo(hash string) string {
     var tx TxResponse
-    err := getData(config.restTx + hash, &tx)
+    err := getData(config.RestTx + hash, &tx)
     if err != nil {
         log.Println("Failed to get TX rest response: ", err)
         return ""
@@ -61,22 +61,7 @@ func getMemo(hash string) string {
 func getAccountName(msg string) string {
 
     // Known account names
-    named := map[string][]string{
-        "BitForex 🏦": {"und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7", ""},
-        "Poloniex 🏦" : {"und186slma7kkxlghwc3hzjr9gkqwhefhln5pw5k26",""},
-        "ProBit 🏦" : {"und1jkhkllr3ws3uxclawn4kpuuglffg327wvfg8r9",""},
-        "DigiFinex 🏦" : {"und1xnrruk9qlgnmh8qxcz9ypfezj45qk96v2rgnzk",""},
-        "All Unjailed Delegations" : {"und1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3j7wxl3",""},
-        "Burn Address 🔥" : {"und1qqqqqqqqqqqqqqqqqqqqqqqqqqqqph4djz5txt",""},
-        "Unbonding/Jailed Delegations" : {"und1tygms3xhhs3yv487phx3dw4a95jn7t7lx7jhf9",""},
-        "Locked eFUND" : {"und1nwt6chnk0efe8ngwa5y63egmdumht6arlvluh3",""},
-        "wFUND" : {"und12k2pyuylm9t7ugdvz67h9pg4gmmvhn5vcrzmhj",""},
-        "Foundation Wallet #1\n( Cold Wallet ) 🏛️" : {"und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8",""},
-        "Foundation Wallet #2 🏛️" : {"und1pyqttnfyqujh4hvjhcx45mz8svptp6f40n4u3p",""},
-        "Foundation Wallet #3 🏛️" : {"und1hdn830wndtquqxzaz3rds7r7hqgpsg5q9ggxpk",""},
-        "Foundation Wallet #4 🏛️" : {"und1cwhkh2ag8w2lf3ngd509wzy43ljxkkn3qe3q4z",""},
-        "The Arbitrager 🕵️" : {"und1d268glh7hns5p6p4yxeuhqqg5v7aygn84u336u",""},
-    }
+    named := map[string][]string{}
     // Convert undval to und1 addresses and append to map
     for _, val := range vals.Validators {
         _, data, err := bech32.Decode(val.OperatorAddress)
@@ -89,6 +74,13 @@ func getAccountName(msg string) string {
         }
         named[val.Description.Moniker] = []string{addr, val.OperatorAddress}
     }
+    // Check if name matches named wallet from config
+    for _, wal := range config.Wallets {
+        if wal.Addr == msg || wal.ValAddr == msg {
+            return wal.Name
+        }
+    }
+
     // Check if name matches wallet or val addr
     for key, val := range named {
         if val[0] == msg || val[1] == msg {
@@ -140,7 +132,7 @@ func denomToAmount(msg string) string {
     var amount string
     var denom string
 
-    fmt.Println(msg)
+    // fmt.Println(msg)
     switch msg[len(msg)-len(config.Denom):] {
     case config.Denom:
         denom = config.Denom
