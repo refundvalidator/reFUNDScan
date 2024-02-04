@@ -9,6 +9,28 @@ import (
 	"time"
 )
 
+type AssetsResponse struct {
+	Assets []struct {
+		DenomUnits []struct {
+			Denom    string `json:"denom"`
+			Exponent int    `json:"exponent"`
+		} `json:"denom_units"`
+		CoingeckoID string `json:"coingecko_id"`
+		Coin        string `json:"symbol"`
+	} `json:"assets"`
+}
+type ChainResponse struct {
+	PrettyName   string `json:"pretty_name"`
+	Bech32Prefix string `json:"bech32_prefix"`
+	Apis         struct {
+		RPC []struct {
+			Address string `json:"address"`
+		} `json:"rpc"`
+		Rest []struct {
+			Address string `json:"address"`
+		} `json:"rest"`
+	} `json:"apis"`
+}
 type ICNSResponse struct {
 	Data struct {
 		Name string `json:"name"`
@@ -20,6 +42,14 @@ type TxResponse struct {
 			Memo string `json:"memo"`
 		} `json:"body"`
 	}
+}
+
+// Only used for verifying a valid rest url response at startup
+type RestResponse struct {
+	Supply []struct {
+		Denom  string `json:"denom"`
+		Amount string `json:"amount"`
+	} `json:"supply"`
 }
 type CoinGeckoResponse struct {
 	MarketData struct {
