@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/fatih/color"
 )
 type AssetsResponse struct {
-	Assets    []struct {
+    Assets    []struct {
 		DenomUnits  []struct {
 			Denom    string `json:"denom"`
 			Exponent int    `json:"exponent"`
@@ -41,13 +43,6 @@ type TxResponse struct {
             Memo string `json:"memo"`
         } `json:"body"`
     }
-}
-// Only used for verifying a valid rest url response at startup
-type RestResponse struct {
-    Supply []struct {
-        Denom  string `json:"denom"`
-        Amount string `json:"amount"`
-    } `json:"supply"`
 }
 type CoinGeckoResponse struct {
     MarketData struct{
@@ -135,13 +130,13 @@ func getData(url string, container interface{}) error {
 func autoRefresh(url string, container interface{}){
     ticker := time.NewTicker(time.Second * 60)
     if err := getData(url, container); err != nil {
-        log.Println(err)
+        log.Println(color.RedString("Failed to get AutoRefresh Data: ",err))
     }
     for {
         select {
         case <- ticker.C:
             if err := getData(url, container); err != nil {
-                log.Println(err)
+                log.Println(color.RedString("Failed to get AutoRefresh Data: ",err))
             }
         }
     }

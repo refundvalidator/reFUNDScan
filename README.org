@@ -1,10 +1,12 @@
 #+TITLE: reFUNDScan
-#+DESCRIPTION: A WIP Project
+#+DESCRIPTION: Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
 #+STARTUP: inlineimages
-Telegram bot made to monitor transactions on the unification mainchain
+Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
+
 
 ** Capabilities
 *** Current Features:
+- Automatic Chain Configuration
 - Transfers
 - IBC Transfers
 - ICNS Namings
@@ -20,7 +22,7 @@ Telegram bot made to monitor transactions on the unification mainchain
 - Validator Status/Jailings
 - Validator Unjails
 ** Build and Run
-reFUNDScan is open-source and can be easily run by anybody, the main channel is hosted at @reFUNDScan
+reFUNDScan is open-source and can be easily run by anybody, the main channel is hosted at @reFUNDScan for the [[https://unification.com/][Unification]] Chain
 
 To build the bot yourself simply clone the repo:
 #+begin_src bash
@@ -29,20 +31,36 @@ git clone https://github.com/refundvalidator/reFUNDScan
 Then run:
 #+begin_src bash
 cd reFUNDScan/src
-go run . -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID"
 #+end_src
-You can also pass your own websocket and rest endpoints if you'd like
+In this directory, there is a ~config.toml~ file that the bot uses, you'll need to set your Telegram Chat-ID, API, and Chains' name
+as it appears in the [[https://github.com/cosmos/chain-registry][Cosmos Chain Registry]]. After filling out the custom information, you can run it with:
 #+begin_src bash
-go run . -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID" -ws "wss://rpc1.unification.io/websocket" -rest "https://rest.unification.io"
+go run . 
+# By default, the program will seach the Current Working Directory for a config.toml file, 
+# you can specify the path instead with:
+go run . --config "/full/path/to/config.toml"
 #+end_src
 Or you can compile the binary yourself
 #+begin_src bash
 go build -o bot .
-./bot -api "YOUR_TG_BOT_API_KEY" -chid "YOUR_TG_CHANID"
+./bot --config "/full/path/to/config/directory"
 #+end_src
 Pre-compiled binaries can be found in the releases section of this repo
+
+NOTE: reFUND scan is a Work In Progress, so things may not work as expected for some given chains. The 
+primary testing ground for this bot is on the Unificaton Chain.
+** Configuration
+reFUNDScan has the ability to pull chain information, and RPC and REST URLs, from the [[https://github.com/cosmos/chain-registry/tree/master][Cosmos Chain Registry]]  
+just by being given a ~[chain]~ name. You'll want to ensure the name in this field is as it shows within the Registry
+
+You can alternatively define many of these parameters yourself, in the config.toml file.
+
+In this file, you can also define which messages to send/ignore, as well as set custom naming for the hyperlinks
+the bot sends for a given address, by defining a new ~wallet~ field, with a couple examples predefined in the 
+config file itself. You also have the ability to switch which explorer the bot uses for its hyperlinks, the default
+being [[https://ping.pub][ping.pub]], but other preset options such as [[https://atomscan.com][atomscan]], [[https://mintscan.io][mintscan]], and [[https://bigdipper.live][bigdipper]]. If these do not suit your needs,
+you can append custom values as well.
 ** reFUNDScan in action
 [[./assets/example.png]]
-
 
 

@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
-    "strings"
 
+	"github.com/fatih/color"
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 var (
@@ -38,15 +38,13 @@ func main(){
     go Connect(resp, restart)
     bot, err := telegram.NewBotAPI(config.API)
     if err != nil {
-        log.Fatal("Cannot connect to bot, check your BotKey or internet connection")
+        log.Fatal(color.RedString("Cannot connect to bot, check your BotKey or internet connection"))
     }
     // bot.Debug = true
 
-    // AutoRefresh coin gecko data
-    go autoRefresh(
-        fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s", config.CoinGeckoID),
-        &cg)
-    go autoRefresh(config.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000",&vals)
+    // AutoRefresh coin gecko and validator set data
+    go autoRefresh(config.RestCoinGecko,&cg)
+    go autoRefresh(config.RestValidators,&vals)
 
     go func(){
         for {
@@ -57,11 +55,11 @@ func main(){
                 msg.DisableWebPagePreview = true
                 _, err := bot.Send(msg)
                 if err != nil {
-                    log.Println("Could not sent message, check your internet connection or ChatID")
+                    log.Println(color.YellowString("Could not sent message, check your internet connection or ChatID"))
                 }
-                log.Println(message)
+                log.Println(color.BlueString(message))
             case <- restart:
-                log.Println("Restarting websocket connection in 30 seconds")
+                log.Println(color.BlueString("Restarting websocket connection in 30 seconds"))
                 time.Sleep(time.Second * 30)
                 go Connect(resp, restart)
             }
@@ -69,7 +67,7 @@ func main(){
     }()
     select {
     case <- interrupt:
-        log.Println("Interrupted")
+        log.Println(color.RedString("Interrupted"))
         return
     }
 }
