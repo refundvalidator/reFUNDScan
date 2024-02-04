@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
-    "time"
-    "strings"
-    "net/url"
-    "net/http"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
-    "github.com/gorilla/websocket"
+	"github.com/fatih/color"
+	"github.com/gorilla/websocket"
 )
 
 // Config struct to represent the structure of the TOML file
@@ -31,12 +32,13 @@ type ConfigFile struct {
         Bech32Prefix string `toml:"bech32-prefix"`
     }`toml:"chaininfo"`
 	Connections struct {
-        Default    bool
-        Rest       string
-        Websocket  string
+        Default    bool `toml:"default"`
+        Rest       string `toml:"rest"`
+        Websocket  string `toml:"websocket"`
     }`toml:"connections"`
 	ICNS struct{
-    	URL string
+        Default bool `toml:"default"`
+    	URL string `toml:"url"`
     }`toml:"icns"`
     Wallets []WalletsConfig `toml:"wallet"`
     Explorer struct {
@@ -100,19 +102,21 @@ type Config struct {
     ExplorerTx         string
     ExplorerAccount    string
     ExplorerValidator  string
+
+    ICNSAccount     string
 }
 
 var (
     configfile ConfigFile
-    chain ChainResponse
-    assets AssetsResponse
+    chain      ChainResponse
+    assets     AssetsResponse
+    icns       ChainResponse
 )
 
 func (cfg *Config) parseConfig(filePath string) {
 
 	if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
-		log.Println("Error parsing TOML file:", err)
-		return
+		log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
 	}
     cfg.API = configfile.Telegram.API
     cfg.ChatID = configfile.Telegram.ChatID
@@ -129,16 +133,30 @@ func (cfg *Config) parseConfig(filePath string) {
     cfg.Restake = configfile.General.Restake
     cfg.Wallets = configfile.Wallets
 
+    // Grab the first available Rest URL for ICNS from the chain registry, if default = true
+    if configfile.ICNS.Default == true {
+        err := getData(
+            "https://raw.githubusercontent.com/cosmos/chain-registry/master/osmosis/chain.json",
+            &icns)
+        if err != nil {
+            log.Fatal(color.RedString("Failed to get the chain.json from the osmosis chain registry, Please enter an ICNS URL manually"))
+        }
+        cfg.ICNSUrl = icns.Apis.Rest[0].Address
+    } else {
+        cfg.ICNSUrl = configfile.ICNS.URL
+    }
+
+    // Grab the first available Rest and RPC/Websocket URL from the chain registry, if default = true
     if configfile.Connections.Default == true {
         err := getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
             &chain)
         if err != nil {
-            log.Fatal("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry")
+            log.Fatal(color.RedString("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
         parsedRPC, err := url.Parse(chain.Apis.RPC[0].Address)
         if err != nil{
-            log.Fatal("Error parsing Rest URL", err)
+            log.Fatal(color.RedString("Error parsing RPC URL", err))
         }
         cfg.RestURL = chain.Apis.Rest[0].Address
         cfg.WebsocketURL = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
@@ -147,18 +165,19 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.WebsocketURL = configfile.Connections.Websocket
     }
 
+    // Grab the chain info from the registry, if default = true
     if configfile.ChainInfo.Default == true {
         err := getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", config.Chain),
             &assets)
         if err != nil {
-            log.Fatal("Failed to get the assetslist.json from the chain registry, verify your chains' name matches the entry from the chain registry")
+            log.Fatal(color.RedString("Failed to get the assetslist.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
         err = getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
             &chain)
         if err != nil {
-            log.Fatal("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry")
+            log.Fatal(color.RedString("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
         cfg.ChainPrettyName = chain.PrettyName
         cfg.Bech32Prefix = chain.Bech32Prefix
@@ -186,7 +205,7 @@ func (cfg *Config) parseConfig(filePath string) {
         } else {
             base = "https://ping.pub/" + configfile.Explorer.Path
         }
-        cfg.ExplorerTx = base + "/txs/"
+        cfg.ExplorerTx = base + "/tx/"
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     case "atom":
@@ -226,85 +245,113 @@ func (cfg *Config) parseConfig(filePath string) {
         } else {
             base = "https://ping.pub/" + configfile.Explorer.Path
         }
-        cfg.ExplorerTx = base + "/txs/"
+        cfg.ExplorerTx = base + "/tx/"
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     }
-    cfg.RestTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
-    cfg.RestCoinGecko = "https://api.coingecko.com/api/v3/coins/" + cfg.CoinGeckoID
-    cfg.RestValidators = cfg.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
     cfg.validateConfig()
 }
 func (cfg *Config) validateConfig(){
-    log.Println("Validating Config...")
-    log.Println("Testing ICNS URL...")
+    log.Println(color.BlueString("Validating Config..."))
+    log.Println(color.BlueString("Testing ICNS URL..."))
     client := &http.Client{Timeout: 10 * time.Second}
 
-    if response, err := client.Head(cfg.ICNSUrl); err != nil || response.StatusCode != http.StatusNotImplemented {
-        log.Fatal("Bad ICNS URL, Please verify your config") 
+    if response, err := client.Head(cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/");
+    err != nil || response.StatusCode != http.StatusNotImplemented {
+        if configfile.ICNS.Default != true {
+            log.Fatal(color.RedString("Bad ICNS URL, Please verify your config"))
+        }
+        success := false
+        for i, u := range(icns.Apis.Rest){
+            if i == 0 {
+                continue
+            }
+            cfg.RestURL = strings.TrimRight(u.Address, "/")
+            log.Println(color.YellowString("Bad ICNS URL, trying the next one in the registry..."))
+            log.Println(color.BlueString("Testing ICNS URL: " + cfg.ICNSUrl))
+            if response, err := client.Head(cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"); err == nil && response.StatusCode == http.StatusNotImplemented {
+                success = true
+                break 
+            }
+        }
+        if success != true {
+            log.Fatal(color.RedString("Could not find valid ICNS URL in the chain registry, please provide your own"))
+        }
+        log.Println(color.GreenString("Using ICNS URL: " + cfg.ICNSUrl))
+        log.Println(color.GreenString("Rest ICNS Valid\n"))
+
     } else {
-        log.Println("ICNS URL Valid\n")
+        log.Println(color.GreenString("Using ICNS URL: " + cfg.ICNSUrl))
+        log.Println(color.GreenString("ICNS URL Valid\n"))
     }
-    log.Println("Testing Rest URL...")
+    log.Println(color.BlueString("Testing Rest URL: " + cfg.RestURL))
     if response, err := client.Head(cfg.RestURL + "/cosmos/tx/v1beta1/txs"); err != nil || response.StatusCode != http.StatusNotImplemented {
         if configfile.Connections.Default != true {
-            log.Fatal("Bad Rest URL, Please verify your config")
+            log.Fatal(color.RedString("Bad Rest URL, Please verify your config"))
         }
         success := false
         for i, u := range(chain.Apis.Rest){
             if i == 0 {
                 continue
             }
-            log.Println("Bad Rest URL, trying the next one in the registry...")
             cfg.RestURL = strings.TrimRight(u.Address, "/")
+            log.Println(color.YellowString("Bad Rest URL, trying the next one in the registry..."))
+            log.Println(color.BlueString("Testing Rest URL: " + cfg.RestURL))
             if response, err := client.Head(cfg.RestURL + "/cosmos/tx/v1beta1/txs"); err == nil && response.StatusCode == http.StatusNotImplemented {
-                log.Println("Using Rest URL: " + u.Address)
-                log.Println("Rest URL Valid\n")
                 success = true
                 break 
             }
         }
         if success != true {
-            log.Fatal("Could not find valid Rest URL in the chain registry, please provide your own")
+            log.Fatal(color.RedString("Could not find valid Rest URL in the chain registry, please provide your own"))
         }
+        log.Println(color.GreenString("Using Rest URL: " + cfg.RestURL))
+        log.Println(color.GreenString("Rest URL Valid\n"))
     } else {
-        log.Println("Rest URL Valid\n")
+        log.Println(color.GreenString("Using Rest URL: " + cfg.RestURL))
+        log.Println(color.GreenString("Rest URL Valid\n"))
     }
-    log.Println("Testing RPC/Websocket URL...")
+    log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.WebsocketURL))
     if _, _, err := websocket.DefaultDialer.Dial(cfg.WebsocketURL, nil); err != nil {
         if configfile.Connections.Default != true {
-            log.Fatal("Bad RPC/Websocket URL, Please verify your config")
+            log.Fatal(color.RedString("Bad RPC/Websocket URL, Please verify your config"))
         }
         success := false
         for i, u := range(chain.Apis.RPC){
             if i == 0 {
                 continue
             }
-            log.Println("Bad RPC/Websocket URL, trying the next one in the registry...")
             parsedRPC, err := url.Parse(u.Address)
             if err != nil {
-                log.Println("Failed to Parse")
+                log.Println(color.YellowString("Failed to Parse"))
                 continue
             }
             cfg.WebsocketURL = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
+            log.Println(color.YellowString("Bad RPC/Websocket URL, trying the next one in the registry..."))
+            log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.WebsocketURL))
             if _, _, err := websocket.DefaultDialer.Dial(cfg.WebsocketURL, nil); err == nil {
-                log.Println("Using RPC/Websocket URL: " + u.Address)
-                log.Println("RPC/Websocket URL Valid\n")
                 success = true
                 break
             }
         }
         if success != true {
-            log.Fatal("Could not find valid RPC URL in the chain registry, please provide your own")
+            log.Fatal(color.RedString("Could not find valid RPC URL in the chain registry, please provide your own"))
         }
+        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.WebsocketURL))
+        log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     } else {
-        log.Println("RPC/Websocket URL Valid\n")
+        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.WebsocketURL))
+        log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
     //Format the information
     cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
     cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
     cfg.ChainPrettyName = strings.ReplaceAll(cfg.ChainPrettyName," ","-")
-    log.Println("Using configuation for: " + cfg.Chain)
+    cfg.RestTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
+    cfg.RestCoinGecko = "https://api.coingecko.com/api/v3/coins/" + cfg.CoinGeckoID
+    cfg.RestValidators = cfg.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
+    cfg.ICNSAccount = cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"
+    log.Println(color.GreenString("Using configuation for: " + cfg.Chain))
 }
 
 // Prints the parsed config to stdout, used for debugging

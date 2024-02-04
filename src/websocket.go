@@ -5,6 +5,7 @@ import (
     "fmt"
     "encoding/json"
 
+	"github.com/fatih/color"
     "github.com/gorilla/websocket"
 )
 
@@ -12,37 +13,37 @@ import (
 func Connect(resp chan string, restart chan bool) {
     c, _, err := websocket.DefaultDialer.Dial(config.WebsocketURL, nil)  
     if err != nil{
-        log.Println("Failed to dial websocket: ", err) 
+        log.Println(color.YellowString("Failed to dial websocket: ", err))
         restart <- true
         return
     } 
     defer c.Close()    
-    log.Println("Connected to websocket")
+    log.Println(color.BlueString("Connected to websocket"))
 
     subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='Tx'" } }`)
     err = c.WriteMessage(websocket.TextMessage, subscribe)
     if err != nil{
-        log.Println("Couldn't subscribe to websocket: " , err) 
+        log.Println(color.YellowString("Couldn't subscribe to websocket: " , err))
         restart <- true
         return
     } 
-    log.Println("Subscribed to websocket")
+    log.Println(color.BlueString("Subscribed to websocket"))
 
     done := make(chan string)  
 
     go func(){
-        log.Println("Listening for messages")
+        log.Println(color.GreenString("Listening for messages"))
         defer close(done)
         for {
             _,m,err := c.ReadMessage()
             if err != nil{
-                log.Println("Failed to read json response: ", err) 
+                log.Println(color.YellowString("Failed to read json response: ", err))
                 restart <- true
                 break
             } 
             var res WebsocketResponse // struct version of the json object
             if err := json.Unmarshal(m,&res); err != nil {
-                log.Println("Couldn't unmarshal json response: ", err)
+                log.Println(color.YellowString("Couldn't unmarshal json response: ", err))
                 restart <- true
                 break
             }
@@ -206,7 +207,7 @@ func Connect(resp chan string, restart chan bool) {
     }()
     select {
     case <- done:
-        log.Println("Listener terminating")
+        log.Println(color.BlueString("Listener terminating"))
         return
     }
 }

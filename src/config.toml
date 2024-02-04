@@ -45,6 +45,9 @@ name = "unification"
 
 [icns]
 # Rest URL to query for ICNS naming
+default = true
+
+# Ignored if default = true
 url = "https://lcd.osmosis.zone/"
 
 [chaininfo]

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/btcsuite/btcutil/bech32"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -50,7 +51,7 @@ func getMemo(hash string) string {
     var tx TxResponse
     err := getData(config.RestTx + hash, &tx)
     if err != nil {
-        log.Println("Failed to get TX rest response: ", err)
+        log.Println(color.YellowString("Failed to get TX rest response: ", err))
         return ""
     }
     return tx.Tx.Body.Memo
@@ -66,11 +67,13 @@ func getAccountName(msg string) string {
     for _, val := range vals.Validators {
         _, data, err := bech32.Decode(val.OperatorAddress)
         if err != nil {
-            log.Println("Could not decode bech32 address") 
+            log.Println(color.YellowString("Could not decode bech32 address"))
+            continue
         }
         addr, err := bech32.Encode(config.Bech32Prefix,data)
         if err != nil {
-            log.Println("Could not encode bech32 address")
+            log.Println(color.YellowString("Could not encode bech32 address"))
+            continue
         }
         named[val.Description.Moniker] = []string{addr, val.OperatorAddress}
     }
@@ -92,9 +95,9 @@ func getAccountName(msg string) string {
     var icns ICNSResponse
     query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
-    err := getData(config.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" + b64, &icns)
+    err := getData(config.ICNSAccount + b64, &icns)
     if err != nil {
-        log.Println("Failed to get ICNS response ", err)
+        log.Println(color.YellowString("Failed to get ICNS response ", err))
     }
     if icns.Data.Name != "" {
         return icns.Data.Name + " (ICNS)"
