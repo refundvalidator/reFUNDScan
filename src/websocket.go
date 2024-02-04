@@ -16,8 +16,8 @@ func Connect(resp chan string, restart chan bool) {
         log.Println(color.YellowString("Failed to dial websocket: ", err))
         restart <- true
         return
-    } 
-    defer c.Close()    
+    }
+    defer c.Close()
     log.Println(color.BlueString("Connected to websocket"))
 
     subscribe := []byte(`{ "jsonrpc": "2.0", "method": "subscribe", "id": 0, "params": { "query": "tm.event='Tx'" } }`)
@@ -26,7 +26,7 @@ func Connect(resp chan string, restart chan bool) {
         log.Println(color.YellowString("Couldn't subscribe to websocket: " , err))
         restart <- true
         return
-    } 
+    }
     log.Println(color.BlueString("Subscribed to websocket"))
 
     done := make(chan string)  
@@ -40,7 +40,7 @@ func Connect(resp chan string, restart chan bool) {
                 log.Println(color.YellowString("Failed to read json response: ", err))
                 restart <- true
                 break
-            } 
+            }
             var res WebsocketResponse // struct version of the json object
             if err := json.Unmarshal(m,&res); err != nil {
                 log.Println(color.YellowString("Couldn't unmarshal json response: ", err))
@@ -201,7 +201,71 @@ func Connect(resp chan string, restart chan bool) {
                     }
                     msg += "\n‎"
                     resp <- msg 
-                }
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterAccount" && config.RegisterAccount {
+					// Starname specific
+					//⭐️
+
+					// Register new Starname -> Account
+					msg := "‎" +
+						mkBold("\n⭐️️ Register Starname ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+					//mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				} else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterDomain" && config.RegisterDomain {
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Register Starname ⭐️️") +
+						mkBold("\n\n*"+events.DomainName[0])
+					//mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				} else if ev == "/starnamed.x.starname.v1beta1.MsgTransferAccount" && config.TransferAccount {
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0]) +
+						mkBold("\n\nSender: ") +
+						mkAccountLink(events.MessageSender[0]) +
+						mkBold("\n\nRecipient: ") +
+						mkAccountLink(events.NewAccountOwner[0])
+
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				} else if ev == "/starnamed.x.starname.v1beta1.MsgTransferDomain" && config.TransferDomain {
+					// Register new Starname -> Domain
+					msg := "‎" +
+						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+						mkBold("\n\n*"+events.DomainName[0]) +
+						mkBold("\n\nSender: ") +
+						mkAccountLink(events.MessageSender[0]) +
+						mkBold("\n\nRecipient: ") +
+						mkAccountLink(events.NewDomainOwner[0])
+
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				} else if ev == "/starnamed.x.starname.v1beta1.MsgDeleteAccount" && config.DeleteAccount {
+					msg := "‎" +
+						mkBold("\n⭐️️ Delete Starname ⭐️️") +
+						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+					if memo := getMemo(events.TxHash[0]); memo != "" {
+						msg += mkBold("\nMemo: " + memo)
+					}
+					msg += "\n‎"
+					resp <- msg
+				}
             }
         }
     }()

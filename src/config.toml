@@ -7,15 +7,23 @@ api = ""
 
 [general]
 # Types of messages to enable or disable
-transfers = true
-ibc-transfers-in = false
-ibc-transfers-out = false
+transfers = false
+ibc-transfers-in = true
+ibc-transfers-out = true
 withdraw-rewards = false
 withdraw-commission = false
 delegations = true
 undelegations = true
 redelegations = true
 restake = false
+
+# Starname specific messages
+register-account = true
+register-domain = true
+transfer-account = true
+transfer-domain = true
+delete-account = true
+
 
 [explorer]
 # Which explorer to use for the hyperlinks
@@ -63,8 +71,8 @@ coin-gecko-id = "unification"
 bech32-prefix = "und"
 
 [connections]
-# If default = true, reFUNDScan will use the first mentioned RPC and REST connections
-# given by the cosmos chain registry for the chain name
+# If default = true, reFUNDScan will automatically attempt each of the RPCs and REST urls
+# given by the cosmos chain registry for the chain name until it find a valid one
 default = true
 
 # The following will be ignored if default=true
@@ -73,11 +81,11 @@ websocket = "wss://rpc1.unification.io/websocket"
 
 # Optionally define a list of wallets to be named when their account/val addresses are recognized
 [[wallet]]
-name = "Burn Address 🔥"
-addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
+#name = "Burn Address 🔥"
+#addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
 
 [[wallet]]
-name = "reFUND"
-addr = "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
-val-addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
+#name = "reFUND"
+#addr = "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+#val-addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
 

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
+    "time"
+    "strings"
+    "net/url"
+    "net/http"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fatih/color"
@@ -59,6 +59,11 @@ type ConfigFile struct {
         Undelegations   bool `toml:"undelegations"`
         Redelegations   bool `toml:"redelegations"`
         Restake         bool `toml:"restake"`
+		RegisterAccount bool `toml:"register-account"`
+		RegisterDomain  bool `toml:"register-domain"`
+		TransferAccount bool `toml:"transfer-account"`
+		TransferDomain  bool `toml:"transfer-domain"`
+		DeleteAccount   bool `toml:"delete-account"`
     }`toml:"general"`
 }
 type WalletsConfig struct {
@@ -92,6 +97,11 @@ type Config struct {
     Undelegations   bool
     Redelegations   bool
     Restake         bool
+	RegisterAccount bool
+	RegisterDomain  bool
+	TransferAccount bool
+	TransferDomain  bool
+	DeleteAccount   bool
 
     Wallets         []WalletsConfig
 
@@ -134,6 +144,11 @@ func (cfg *Config) parseConfig(filePath string) {
     cfg.Undelegations = configfile.General.Undelegations
     cfg.Redelegations = configfile.General.Redelegations
     cfg.Restake = configfile.General.Restake
+	cfg.RegisterAccount = configfile.General.RegisterAccount
+	cfg.RegisterDomain = configfile.General.RegisterDomain
+	cfg.TransferAccount = configfile.General.TransferAccount
+	cfg.TransferDomain = configfile.General.TransferDomain
+	cfg.DeleteAccount = configfile.General.DeleteAccount
     cfg.Wallets = configfile.Wallets
 
     // Grab the first available Rest URL for ICNS from the chain registry, if default = true
@@ -274,7 +289,7 @@ func (cfg *Config) validateConfig(){
             log.Println(color.BlueString("Testing ICNS URL: " + cfg.ICNSUrl))
             if response, err := client.Head(cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"); err == nil && response.StatusCode == http.StatusNotImplemented {
                 success = true
-                break 
+                break
             }
         }
         if success != true {
@@ -302,7 +317,7 @@ func (cfg *Config) validateConfig(){
             log.Println(color.BlueString("Testing Rest URL: " + cfg.RestURL))
             if response, err := client.Head(cfg.RestURL + "/cosmos/tx/v1beta1/txs"); err == nil && response.StatusCode == http.StatusNotImplemented {
                 success = true
-                break 
+                break
             }
         }
         if success != true {
