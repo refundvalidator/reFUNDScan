@@ -33,6 +33,18 @@ type Coin struct {
 	Denom  string `json:"denom"`
 	Amount string `json:"amount"`
 }
+
+//{\"@type\":\"/starnamed.x.starname.v1beta1.Account\",\"domain\":\"me\",\"name\":\"observer-test\",\"owner\":\"star15k7tssu0wyrfq57zj7ye297n50ew3sffy25me8\",\"broker\":\"\",\"valid_until\":\"1738468896\",\"resources\":[],\"certificates\":[],\"metadata_uri\":\"\"}
+
+type EscrowObject struct {
+	Type       string `json:"@type"`
+	Domain     string `json:"domain"`
+	Name       string `json:"name"`
+	Owner      string `json:"owner"`
+	Broker     string `json:"broker"`
+	ValidUntil string `json:"valid_until"`
+}
+
 type WebsocketResponse struct {
 	Result struct {
 		Events struct {
@@ -57,11 +69,13 @@ type WebsocketResponse struct {
 			RedelegateDestinationValidator []string `json:"redelegate.destination_validator"`
 			RedelegateAmount               []string `json:"redelegate.amount"`
 			// Starname
-			AccountName     []string `json:"message.account_name"`
-			DomainName      []string `json:"message.domain_name"`
-			Registerer      []string `json:"message.registerer"`
-			NewAccountOwner []string `json:"message.new_account_owner"`
-			NewDomainOwner  []string `json:"message.new_domain_owner"`
+			AccountName        []string `json:"message.account_name"`
+			DomainName         []string `json:"message.domain_name"`
+			Registerer         []string `json:"message.registerer"`
+			NewAccountOwner    []string `json:"message.new_account_owner"`
+			NewDomainOwner     []string `json:"message.new_domain_owner"`
+			CreateEscrowPrice  []string `json:"starnamed.x.escrow.v1beta1.EventCreatedEscrow.price"`
+			CreateEscrowObject []string `json:"starnamed.x.escrow.v1beta1.EventCreatedEscrow.object"`
 		} `json:"events"`
 	} `json:"result"`
 }

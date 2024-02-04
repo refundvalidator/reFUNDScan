@@ -266,14 +266,30 @@ func Connect(resp chan string, restart chan bool) {
 					msg += "\n‎"
 					resp <- msg
 				case "/starnamed.x.escrow.v1beta1.MsgCreateEscrow":
+
+					var es EscrowObject
+					if err := json.Unmarshal([]byte(events.CreateEscrowObject[0]), &es); err != nil {
+						log.Println("Couldn't unmarshal json EscrowObject: ", err)
+						break
+					}
+
+					//var price []Coin
+					//if err := json.Unmarshal([]byte(events.CreateEscrowPrice[0]), &price); err != nil {
+					//	log.Println("Couldn't unmarshal json EscrowPrice: ", err)
+					//	break
+					//}
+
 					msg := "‎" +
 						mkBold("\n⭐️️ List Starname for sale ⭐️️") +
-						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+						mkBold("\n\n"+es.Name+"*"+es.Domain)
+					//mkBold("\n\nPrice: ️️"+denomToAmount(price[0].Amount+price[0].Denom))
+
 					if memo := getMemo(events.TxHash[0]); memo != "" {
 						msg += mkBold("\nMemo: " + memo)
 					}
 					msg += "\n‎"
 					resp <- msg
+
 				}
 
 			}
