@@ -114,7 +114,10 @@ var (
 )
 
 func (cfg *Config) parseConfig(filePath string) {
-
+    if strings.HasSuffix(filePath, "config.toml") {
+        filePath = strings.TrimSuffix(filePath, "config.toml")
+    }
+    filePath = strings.TrimRight(filePath,"/")
 	if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
 		log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
 	}
