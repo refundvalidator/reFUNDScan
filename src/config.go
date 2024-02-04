@@ -159,6 +159,9 @@ func (cfg *Config) parseConfig(filePath string) {
         if err != nil {
             log.Fatal(color.RedString("Failed to get the chain.json from the osmosis chain registry, Please enter an ICNS URL manually"))
         }
+        if len(icns.Apis.Rest) == 0 {
+            log.Fatal(color.RedString("Failed to get any ICNS Urls from the osmosis chain registry, Please enter an ICNS URL manually"))
+        } 
         cfg.ICNSUrl = icns.Apis.Rest[0].Address
     } else {
         cfg.ICNSUrl = configfile.ICNS.URL
@@ -172,9 +175,15 @@ func (cfg *Config) parseConfig(filePath string) {
         if err != nil {
             log.Fatal(color.RedString("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
+        if len(chain.Apis.RPC) == 0 {
+            log.Fatal(color.RedString("Failed to retrieve any RPC/Websocket urls from the chain registry, please enter a RPC/Websocket URL manually"))
+        }
         parsedRPC, err := url.Parse(chain.Apis.RPC[0].Address)
         if err != nil{
             log.Fatal(color.RedString("Error parsing RPC URL", err))
+        }
+        if len(chain.Apis.Rest) == 0 {
+            log.Fatal(color.RedString("Failed to retrieve any Rest urls from the chain registry, please enter a Rest URL manually"))
         }
         cfg.RestURL = chain.Apis.Rest[0].Address
         cfg.WebsocketURL = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)

@@ -38,12 +38,12 @@ as it appears in the [[https://github.com/cosmos/chain-registry][Cosmos Chain Re
 go run . 
 # By default, the program will seach the Current Working Directory for a config.toml file, 
 # you can specify the path instead with:
-go run . --config "/full/path/to/config.toml"
+go run . --config ~/.refundscan/config.toml
 #+end_src
 Or you can compile the binary yourself
 #+begin_src bash
 go build -o bot .
-./bot --config "/full/path/to/config/directory"
+./bot --config ~/.refundscan
 #+end_src
 Pre-compiled binaries can be found in the releases section of this repo
 
