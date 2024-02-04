@@ -42,13 +42,6 @@ type TxResponse struct {
         } `json:"body"`
     }
 }
-// Only used for verifying a valid rest url response at startup
-type RestResponse struct {
-    Supply []struct {
-        Denom  string `json:"denom"`
-        Amount string `json:"amount"`
-    } `json:"supply"`
-}
 type CoinGeckoResponse struct {
     MarketData struct{
         CurrentPrice struct {

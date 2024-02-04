@@ -44,6 +44,8 @@ type ConfigFile struct {
        Tx        string `toml:"explorer-custom-tx"`
        Account   string `toml:"explorer-custom-account"`
        Validator string `toml:"explorer-custom-validator"`
+       AutoPath  bool   `toml:"auto-path"`
+       Path      string `toml:"path"`
     } `toml:"explorer"`
     General struct {
         Transfers       bool `toml:"transfers"`
@@ -92,6 +94,8 @@ type Config struct {
     Wallets         []WalletsConfig
 
     RestTx          string
+    RestValidators  string
+    RestCoinGecko   string
 
     ExplorerTx         string
     ExplorerAccount    string
@@ -130,7 +134,7 @@ func (cfg *Config) parseConfig(filePath string) {
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
             &chain)
         if err != nil {
-            log.Fatal("Failed to get the chain.json from the chain registry, check your configuration")
+            log.Fatal("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry")
         }
         parsedRPC, err := url.Parse(chain.Apis.RPC[0].Address)
         if err != nil{
@@ -148,13 +152,13 @@ func (cfg *Config) parseConfig(filePath string) {
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", config.Chain),
             &assets)
         if err != nil {
-            log.Fatal("Failed to get the assetslist.json from the chain registry, check your configuration")
+            log.Fatal("Failed to get the assetslist.json from the chain registry, verify your chains' name matches the entry from the chain registry")
         }
         err = getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
             &chain)
         if err != nil {
-            log.Fatal("Failed to get the chain.json from the chain registry, check your configuration")
+            log.Fatal("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry")
         }
         cfg.ChainPrettyName = chain.PrettyName
         cfg.Bech32Prefix = chain.Bech32Prefix
@@ -176,32 +180,59 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.ExplorerAccount = configfile.Explorer.Account
         cfg.ExplorerValidator = configfile.Explorer.Validator
     case "ping":
-        base := "https://ping.pub/" + cfg.ChainPrettyName
+        var base string
+        if configfile.Explorer.AutoPath {
+            base = "https://ping.pub/" + cfg.ChainPrettyName
+        } else {
+            base = "https://ping.pub/" + configfile.Explorer.Path
+        }
         cfg.ExplorerTx = base + "/txs/"
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     case "atom":
-        base := "https://atomscan.com/" + cfg.ChainPrettyName
+        var base string
+        if configfile.Explorer.AutoPath {
+            base = "https://atomscan.com/" + cfg.ChainPrettyName
+        } else {
+            base = "https://atomscan.com/" + configfile.Explorer.Path
+        }
         cfg.ExplorerTx = base + "/transactions/"
         cfg.ExplorerAccount = base + "/accounts/"
         cfg.ExplorerValidator = base + "/validators/"
     case "mint":
-        base := "https://mintscan.io/" + cfg.ChainPrettyName
+        var base string
+        if configfile.Explorer.AutoPath {
+            base = "https://mintscan.io/" + cfg.ChainPrettyName
+        } else {
+            base = "https://mintscan.io/" + configfile.Explorer.Path
+        }
         cfg.ExplorerTx = base + "/tx/"
         cfg.ExplorerAccount = base + "/address/"
         cfg.ExplorerValidator = base + "/validators/"
     case "dipper":
-        base := "https://bigdipper.live/" + cfg.ChainPrettyName
+        var base string
+        if configfile.Explorer.AutoPath {
+            base = "https://bigdipper.live/" + cfg.ChainPrettyName
+        } else {
+            base = "https://bigdipper.live/" + configfile.Explorer.Path
+        }
         cfg.ExplorerTx = base + "/transactions/"
         cfg.ExplorerAccount = base + "/accounts/"
         cfg.ExplorerValidator = base + "/validators/"
     default:
-        base := "https://ping.pub/" + cfg.ChainPrettyName
+        var base string
+        if configfile.Explorer.AutoPath {
+            base = "https://ping.pub/" + cfg.ChainPrettyName
+        } else {
+            base = "https://ping.pub/" + configfile.Explorer.Path
+        }
         cfg.ExplorerTx = base + "/txs/"
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     }
     cfg.RestTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
+    cfg.RestCoinGecko = "https://api.coingecko.com/api/v3/coins/" + cfg.CoinGeckoID
+    cfg.RestValidators = cfg.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
     cfg.validateConfig()
 }
 func (cfg *Config) validateConfig(){
@@ -273,6 +304,7 @@ func (cfg *Config) validateConfig(){
     cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
     cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
     cfg.ChainPrettyName = strings.ReplaceAll(cfg.ChainPrettyName," ","-")
+    log.Println("Using configuation for: " + cfg.Chain)
 }
 
 // Prints the parsed config to stdout, used for debugging
@@ -292,12 +324,14 @@ func (cfg *Config) showConfig(){
 
     fmt.Println("\n--[URLS]--")
     fmt.Println("RestURL: " + cfg.RestURL)
-    fmt.Println("WebscoketURL: " + cfg.WebsocketURL)
+    fmt.Println("WebsocketURL: " + cfg.WebsocketURL)
     fmt.Println("ICSNUrl: " + cfg.ICNSUrl)
-
-    fmt.Println("\n--[Explorer]--")
-    fmt.Println("WebscoketURL: " + cfg.WebsocketURL)
-    fmt.Println("ICSNUrl: " + cfg.ICNSUrl)
+    fmt.Println("RestTxURL: " + cfg.RestTx)
+    fmt.Println("RestValidatorsURL: " + cfg.RestValidators)
+    fmt.Println("RestCoinGecko: " + cfg.RestCoinGecko)
+    fmt.Println("ExplorerTxURL: " + cfg.ExplorerTx)
+    fmt.Println("ExplorerAccountURL: " + cfg.ExplorerAccount)
+    fmt.Println("ExplorerValidatorURL: " + cfg.ExplorerValidator)
 
 
     fmt.Println("\n--[Preferences]--")

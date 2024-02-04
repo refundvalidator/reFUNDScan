@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -25,7 +24,7 @@ func init(){
     flag.Parse()
     configpath = strings.TrimRight(configpath,"/")
     config.parseConfig(configpath)
-    // config.showConfig()
+    config.showConfig()
 }
 
 // Start the telegram bot and listen for messages from the resp channel
@@ -42,11 +41,9 @@ func main(){
     }
     // bot.Debug = true
 
-    // AutoRefresh coin gecko data
-    go autoRefresh(
-        fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s", config.CoinGeckoID),
-        &cg)
-    go autoRefresh(config.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000",&vals)
+    // AutoRefresh coin gecko and validator set data
+    go autoRefresh(config.RestCoinGecko,&cg)
+    go autoRefresh(config.RestValidators,&vals)
 
     go func(){
         for {

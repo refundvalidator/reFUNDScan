@@ -15,7 +15,7 @@ withdraw-commission = false
 delegations = true
 undelegations = true
 redelegations = true
-restake = true
+restake = false
 
 [explorer]
 # Which explorer to use for the hyperlinks
@@ -23,10 +23,18 @@ restake = true
 # "ping" for ping.pub
 # "atom" for atomscan.com
 # "mint" for mintscan.io
-# "custom" for custom URLs to use
-explorer-preset = "atom"
+# "dipper" for bigdipper.live
+# "custom" to set custom URLs
+explorer-preset = "ping"
+
+# Ignored if explorer-preset = "custom"
+# If auto-path = true, the explorers' chain path will use the chains' pretty name from the registry or chaininfo
+# If auto-path = false, the explorers' chain path will use the value set by path
+auto-path = true 
+path = "Unification"
 
 # The following only take affect if explorer-preset = "custom"
+# Overrides the path option above
 explorer-custom-tx = "https://ping.pub/Unification/tx"
 explorer-custom-account = "https://ping.pub/Unification/accounts"
 explorer-custom-validator = "https://ping.pub/Unification/staking"
@@ -44,12 +52,12 @@ url = "https://lcd.osmosis.zone/"
 default = true
 
 # The following will be ignored if default=true
-pretty-name = "Starname"
-coin = "IOV"
-denom = "uiov"
-exponent = 6
-coin-gecko-id = "starname"
-bech32-prefix = "star"
+pretty-name = "Unification"
+coin = "FUND"
+denom = "nund"
+exponent = 9
+coin-gecko-id = "unification"
+bech32-prefix = "und"
 
 [connections]
 # If default = true, reFUNDScan will use the first mentioned RPC and REST connections
@@ -57,8 +65,8 @@ bech32-prefix = "star"
 default = true
 
 # The following will be ignored if default=true
-rest = "https://rest.starname.app/"
-websocket = "wss://rpc.starname.app/websocket"
+rest = "https://rest.unification.io/"
+websocket = "wss://rpc1.unification.io/websocket"
 
 # Optionally define a list of wallets to be named when their account/val addresses are recognized
 [[wallet]]
