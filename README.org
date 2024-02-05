@@ -47,6 +47,11 @@ go build -o bot .
 #+end_src
 Pre-compiled binaries can be found in the releases section of this repo
 
+If using one of the binary releases, you can generate a config file with:
+#+begin_src bash
+./refundscan --config ~/folder/to/generate/config/ --init
+#+end_src
+
 NOTE: reFUND scan is a Work In Progress, so things may not work as expected for some given chains. The 
 primary testing ground for this bot is on the Unificaton Chain.
 ** Configuration

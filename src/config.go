@@ -7,6 +7,7 @@ import (
     "strings"
     "net/url"
     "net/http"
+	"os"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fatih/color"
@@ -425,4 +426,104 @@ func (cfg *Config) showConfig(){
 		fmt.Printf("Name: %s\nAddr: %s\nValidator Addr: %s\n\n", wallet.Name, wallet.Addr, wallet.ValAddr)
 	}
     fmt.Println()
+}
+
+func initConfig(filePath string){
+    file := `
+[telegram]
+# ChannelID for the channel to send messages to, ex @MyAwesomChannel
+chat-id = ""
+
+# Telegram bot token given by the botfather
+api = ""
+
+[general]
+# Types of messages to enable or disable
+transfers = false
+ibc-transfers-in = true
+ibc-transfers-out = true
+withdraw-rewards = false
+withdraw-commission = false
+delegations = true
+undelegations = true
+redelegations = true
+restake = false
+
+# Starname specific messages
+register-account = true
+register-domain = true
+transfer-account = true
+transfer-domain = true
+delete-account = true
+
+
+[explorer]
+# Which explorer to use for the hyperlinks
+# Current options:
+# "ping" for ping.pub
+# "atom" for atomscan.com
+# "mint" for mintscan.io
+# "dipper" for bigdipper.live
+# "custom" to set custom URLs
+explorer-preset = "ping"
+
+# Ignored if explorer-preset = "custom"
+# If auto-path = true, the explorers' chain path will use the chains' pretty name from the registry or chaininfo
+# If auto-path = false, the explorers' chain path will use the value set by path
+auto-path = true 
+path = "Unification"
+
+# The following only take affect if explorer-preset = "custom"
+# Overrides the path option above
+explorer-custom-tx = "https://ping.pub/Unification/tx"
+explorer-custom-account = "https://ping.pub/Unification/accounts"
+explorer-custom-validator = "https://ping.pub/Unification/staking"
+
+[chain]
+# The name of the chain as it appears in the cosmos chain registry
+name = "unification"
+
+[icns]
+# Rest URL to query for ICNS naming
+default = true
+
+# Ignored if default = true
+url = "https://lcd.osmosis.zone/"
+
+[chaininfo]
+# If default = true, reFUNDScan will use the information given by the cosmos chain registry for the chain name
+default = true
+
+# The following will be ignored if default=true
+pretty-name = "Unification"
+coin = "FUND"
+denom = "nund"
+exponent = 9
+coin-gecko-id = "unification"
+bech32-prefix = "und"
+
+[connections]
+# If default = true, reFUNDScan will automatically attempt each of the RPCs and REST urls
+# given by the cosmos chain registry for the chain name until it find a valid one
+default = true
+
+# The following will be ignored if default=true
+rest = "https://rest.unification.io/"
+websocket = "wss://rpc1.unification.io/websocket"
+
+# Optionally define a list of wallets to be named when their account/val addresses are recognized
+[[wallet]]
+#name = "Burn Address 🔥"
+#addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
+
+[[wallet]]
+#name = "reFUND"
+#addr = "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
+#val-addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
+`
+	// Write the content to the file
+	err := os.WriteFile(filePath + "/config.toml", []byte(file), 0644)
+	if err != nil {
+        log.Fatal(color.RedString("Failed to write file: " , err))
+	}
 }

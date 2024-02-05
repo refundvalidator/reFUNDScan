@@ -16,14 +16,23 @@ var (
     cg CoinGeckoResponse
     vals ValidatorResponse
 
-    configpath string
     config Config
+
+    // Flags
+    configpath string
+    initconfig bool
 )
 
 func init(){
-    flag.StringVar(&configpath, "config", ".", "Directory containing your config.toml")
+    flag.StringVar(&configpath,"config", ".", "Directory containing your config.toml")
+    flag.BoolVar(&initconfig,"init", false, "Creates a predefined config.toml file, if the config path is not set, defaults to the CWD")
     flag.Parse()
     configpath = strings.TrimRight(configpath,"/")
+    if initconfig {
+        initConfig(configpath) 
+        log.Println(color.GreenString("Config file generated at: " + configpath + "/config.toml"))
+        os.Exit(1)
+    }
     config.parseConfig(configpath)
     // config.showConfig()
 }
