@@ -62,7 +62,7 @@ func getMemo(hash string) string {
 func getAccountName(msg string) string {
 
     // Known account names
-    named := map[string][]string{}
+    names := map[string][]string{}
     // Convert undval to und1 addresses and append to map
     for _, val := range vals.Validators {
         _, data, err := bech32.Decode(val.OperatorAddress)
@@ -75,17 +75,18 @@ func getAccountName(msg string) string {
             log.Println(color.YellowString("Could not encode bech32 address"))
             continue
         }
-        named[val.Description.Moniker] = []string{addr, val.OperatorAddress}
+        names[val.Description.Moniker] = []string{addr, val.OperatorAddress}
     }
+
     // Check if name matches named wallet from config
-    for _, wal := range config.Wallets {
-        if wal.Addr == msg || wal.ValAddr == msg {
-            return wal.Name
+    for _, name := range config.Named {
+        if name.Addr == msg {
+            return name.Name
         }
     }
 
     // Check if name matches wallet or val addr
-    for key, val := range named {
+    for key, val := range names {
         if val[0] == msg || val[1] == msg {
             return key
         }
@@ -170,3 +171,26 @@ func denomToAmount(msg string) string {
     }
 }
 
+// Checks if the message is allowed to send based on the whitelist/blacklist rules defined
+func isAllowedMessage (config MessageConfig, msg string) bool {
+    switch config.Filter {
+    case "blacklist":
+        for _, str := range config.WhiteBlackList {
+            if strings.Contains(msg, str) {
+                log.Println(color.YellowString("Filtered Message! Message contained blacklisted item: " + str))
+                return false
+            }
+        }
+        return true
+    case "whitelist":
+        for _, str := range config.WhiteBlackList {
+            if strings.Contains(msg, str) {
+                return true
+            }
+        }
+        log.Println(color.YellowString("Filtered Message! Message did not contain any whitelisted item"))
+        return false
+    default:
+        return true
+    }
+}

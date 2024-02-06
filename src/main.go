@@ -1,15 +1,15 @@
 package main
 
 import (
-	"flag"
-	"log"
-	"os"
-	"os/signal"
-	"strings"
-	"time"
+    "flag"
+    "log"
+    "os"
+    "os/signal"
+    "strings"
+    "time"
 
-	"github.com/fatih/color"
-	telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+    "github.com/fatih/color"
+    telegram "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 var (
     // Persistent json responses
@@ -68,8 +68,8 @@ func main(){
                 }
                 log.Println(color.BlueString(message))
             case <- restart:
-                log.Println(color.BlueString("Restarting websocket connection in 30 seconds"))
-                time.Sleep(time.Second * 30)
+                log.Println(color.BlueString("Restarting websocket connection in 10 seconds"))
+                time.Sleep(time.Second * 10)
                 go Connect(resp, restart)
             }
         }

@@ -1,26 +1,26 @@
 package main
 
 import (
-	"fmt"
-	"log"
+    "fmt"
+    "log"
     "time"
     "strings"
     "net/url"
     "net/http"
-	"os"
+    "os"
 
-	"github.com/BurntSushi/toml"
-	"github.com/fatih/color"
-	"github.com/gorilla/websocket"
+    "github.com/BurntSushi/toml"
+    "github.com/fatih/color"
+    "github.com/gorilla/websocket"
 )
 
 // Config struct to represent the structure of the TOML file
 type ConfigFile struct {
-	Telegram struct{
-     	ChatID string `toml:"chat-id"`
+    Telegram struct{
+        ChatID string `toml:"chat-id"`
         API    string `toml:"api"`
     }`toml:"telegram"`
-	Chain struct {
+    Chain struct {
         Name string
     }`toml:"chain"`
     ChainInfo struct {
@@ -32,46 +32,54 @@ type ConfigFile struct {
         CoinGeckoID  string `toml:"coin-gecko-id"`
         Bech32Prefix string `toml:"bech32-prefix"`
     }`toml:"chaininfo"`
-	Connections struct {
+    Connections struct {
         Default    bool `toml:"default"`
         Rest       string `toml:"rest"`
         Websocket  string `toml:"websocket"`
     }`toml:"connections"`
-	ICNS struct{
+    ICNS struct{
         Default bool `toml:"default"`
-    	URL string `toml:"url"`
+        Rest string `toml:"rest"`
     }`toml:"icns"`
-    Wallets []WalletsConfig `toml:"wallet"`
+    Address struct {
+        Addresses []AddressConfig `toml:"named"` 
+    } `toml:"address"`
+    Messages MessagesConfig `toml:"messages"`
     Explorer struct {
-       Preset    string `toml:"explorer-preset"`
-       Tx        string `toml:"explorer-custom-tx"`
-       Account   string `toml:"explorer-custom-account"`
-       Validator string `toml:"explorer-custom-validator"`
-       AutoPath  bool   `toml:"auto-path"`
-       Path      string `toml:"path"`
+        Preset    string `toml:"explorer-preset"`
+        Tx        string `toml:"explorer-custom-tx"`
+        Account   string `toml:"explorer-custom-account"`
+        Validator string `toml:"explorer-custom-validator"`
+        AutoPath  bool   `toml:"auto-path"`
+        Path      string `toml:"path"`
     } `toml:"explorer"`
-    General struct {
-        Transfers       bool `toml:"transfers"`
-        IBCIn           bool `toml:"ibc-transfers-in"`
-        IBCOut          bool `toml:"ibc-transfers-out"`
-        Rewards         bool `toml:"withdraw-rewards"`
-        Commission      bool `toml:"withdraw-commission"`
-        Delegations     bool `toml:"delegations"`
-        Undelegations   bool `toml:"undelegations"`
-        Redelegations   bool `toml:"redelegations"`
-        Restake         bool `toml:"restake"`
-		RegisterAccount bool `toml:"register-account"`
-		RegisterDomain  bool `toml:"register-domain"`
-		TransferAccount bool `toml:"transfer-account"`
-		TransferDomain  bool `toml:"transfer-domain"`
-		DeleteAccount   bool `toml:"delete-account"`
-    }`toml:"general"`
 }
-type WalletsConfig struct {
-    Name    string `toml:"name"` 
-    Addr    string `toml:"addr"` 
-    ValAddr string `toml:"val-addr"` 
+type AddressConfig struct {
+    Name string `toml:"name"` 
+    Addr string `toml:"addr"` 
 }
+type MessageConfig struct {
+    Enabled        bool     `toml:"enable"`
+    Filter         string   `toml:"filter"`
+    WhiteBlackList []string `toml:"list"`
+}
+type MessagesConfig struct {
+    Transfers       MessageConfig `toml:"transfers"`
+    IBCIn           MessageConfig `toml:"ibc-transfers-in"`
+    IBCOut          MessageConfig `toml:"ibc-transfers-out"`
+    Rewards         MessageConfig `toml:"withdraw-rewards"`
+    Commission      MessageConfig `toml:"withdraw-commission"`
+    Delegations     MessageConfig `toml:"delegations"`
+    Undelegations   MessageConfig `toml:"undelegations"`
+    Redelegations   MessageConfig `toml:"redelegations"`
+    Restake         MessageConfig `toml:"restake"`
+    RegisterAccount MessageConfig `toml:"register-account"`
+    RegisterDomain  MessageConfig `toml:"register-domain"`
+    TransferAccount MessageConfig `toml:"transfer-account"`
+    TransferDomain  MessageConfig `toml:"transfer-domain"`
+    DeleteAccount   MessageConfig `toml:"delete-account"`
+}
+
 
 type Config struct {
     API             string
@@ -89,22 +97,9 @@ type Config struct {
     WebsocketURL    string
     ICNSUrl         string
 
-    Transfers       bool
-    IBCIn           bool
-    IBCOut          bool
-    Rewards         bool
-    Commission      bool
-    Delegations     bool
-    Undelegations   bool
-    Redelegations   bool
-    Restake         bool
-	RegisterAccount bool
-	RegisterDomain  bool
-	TransferAccount bool
-	TransferDomain  bool
-	DeleteAccount   bool
+    Messages        MessagesConfig 
 
-    Wallets         []WalletsConfig
+    Named           []AddressConfig
 
     RestTx          string
     RestValidators  string
@@ -120,8 +115,8 @@ type Config struct {
 var (
     configfile ConfigFile
     chain      ChainResponse
-    assets     AssetsResponse
     icns       ChainResponse
+    assets     AssetsResponse
 )
 
 func (cfg *Config) parseConfig(filePath string) {
@@ -129,28 +124,14 @@ func (cfg *Config) parseConfig(filePath string) {
         filePath = strings.TrimSuffix(filePath, "config.toml")
     }
     filePath = strings.TrimRight(filePath,"/")
-	if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
-		log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
-	}
+    if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
+        log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
+    }
     cfg.API = configfile.Telegram.API
     cfg.ChatID = configfile.Telegram.ChatID
     cfg.Chain = configfile.Chain.Name
-    cfg.ICNSUrl = configfile.ICNS.URL
-    cfg.Transfers = configfile.General.Transfers
-    cfg.IBCIn = configfile.General.IBCIn
-    cfg.IBCOut = configfile.General.IBCOut
-    cfg.Rewards = configfile.General.Rewards
-    cfg.Commission = configfile.General.Commission
-    cfg.Delegations = configfile.General.Delegations
-    cfg.Undelegations = configfile.General.Undelegations
-    cfg.Redelegations = configfile.General.Redelegations
-    cfg.Restake = configfile.General.Restake
-	cfg.RegisterAccount = configfile.General.RegisterAccount
-	cfg.RegisterDomain = configfile.General.RegisterDomain
-	cfg.TransferAccount = configfile.General.TransferAccount
-	cfg.TransferDomain = configfile.General.TransferDomain
-	cfg.DeleteAccount = configfile.General.DeleteAccount
-    cfg.Wallets = configfile.Wallets
+    cfg.Messages = configfile.Messages
+    cfg.Named = configfile.Address.Addresses
 
     // Grab the first available Rest URL for ICNS from the chain registry, if default = true
     if configfile.ICNS.Default == true {
@@ -165,7 +146,7 @@ func (cfg *Config) parseConfig(filePath string) {
         } 
         cfg.ICNSUrl = icns.Apis.Rest[0].Address
     } else {
-        cfg.ICNSUrl = configfile.ICNS.URL
+        cfg.ICNSUrl = configfile.ICNS.Rest
     }
 
     // Grab the first available Rest and RPC/Websocket URL from the chain registry, if default = true
@@ -382,52 +363,6 @@ func (cfg *Config) validateConfig(){
     log.Println(color.GreenString("Using configuation for: " + cfg.Chain))
 }
 
-// Prints the parsed config to stdout, used for debugging
-func (cfg *Config) showConfig(){
-    fmt.Println("--[Telegram]--")
-    fmt.Println("API: " + cfg.API) 
-    fmt.Println("ChadID: " + cfg.ChatID)
-
-    fmt.Println("\n--[Chain]--")
-    fmt.Println("Chain: " + cfg.Chain)
-    fmt.Println("ChainPrettyName: " + cfg.ChainPrettyName)
-    fmt.Println("Coin: " + cfg.Coin)
-    fmt.Println("Denom: " + cfg.Denom)
-    fmt.Printf("Exponent: %d\n", cfg.Exponent)
-    fmt.Println("CoinGecko ID: " + cfg.CoinGeckoID)
-    fmt.Println("Bech32Prefix: " + cfg.Bech32Prefix)
-
-    fmt.Println("\n--[URLS]--")
-    fmt.Println("RestURL: " + cfg.RestURL)
-    fmt.Println("WebsocketURL: " + cfg.WebsocketURL)
-    fmt.Println("ICSNUrl: " + cfg.ICNSUrl)
-    fmt.Println("RestTxURL: " + cfg.RestTx)
-    fmt.Println("RestValidatorsURL: " + cfg.RestValidators)
-    fmt.Println("RestCoinGecko: " + cfg.RestCoinGecko)
-    fmt.Println("ExplorerTxURL: " + cfg.ExplorerTx)
-    fmt.Println("ExplorerAccountURL: " + cfg.ExplorerAccount)
-    fmt.Println("ExplorerValidatorURL: " + cfg.ExplorerValidator)
-
-
-    fmt.Println("\n--[Preferences]--")
-    fmt.Printf("Transfers Enabled: %t\n", cfg.Transfers)
-    fmt.Printf("IBC In Transfers Enabled: %t\n", cfg.IBCIn)
-    fmt.Printf("IBC Out Transfers Enabled: %t\n", cfg.IBCOut)
-    fmt.Printf("Rewards Withdrawal Enabled: %t\n", cfg.Rewards)
-    fmt.Printf("Comission Withdrawal Enabled: %t\n", cfg.Commission)
-    fmt.Printf("Delegations Enabled: %t\n", cfg.Delegations)
-    fmt.Printf("Undelegations Enabled: %t\n", cfg.Undelegations)
-    fmt.Printf("Redelegations Enabled: %t\n", cfg.Redelegations)
-    fmt.Printf("Restake Enabled: %t\n", cfg.Restake)
-
-
-    fmt.Println("\n--[Wallets]--")
-	for _, wallet := range cfg.Wallets {
-		fmt.Printf("Name: %s\nAddr: %s\nValidator Addr: %s\n\n", wallet.Name, wallet.Addr, wallet.ValAddr)
-	}
-    fmt.Println()
-}
-
 func initConfig(filePath string){
     file := `
 [telegram]
@@ -437,24 +372,10 @@ chat-id = ""
 # Telegram bot token given by the botfather
 api = ""
 
-[general]
-# Types of messages to enable or disable
-transfers = false
-ibc-transfers-in = true
-ibc-transfers-out = true
-withdraw-rewards = false
-withdraw-commission = false
-delegations = true
-undelegations = true
-redelegations = true
-restake = false
-
-# Starname specific messages
-register-account = true
-register-domain = true
-transfer-account = true
-transfer-domain = true
-delete-account = true
+[chain]
+# The name of the chain as it appears in the cosmos chain registry
+# example: osmosis, cosmos, unification
+name = "unification"
 
 
 [explorer]
@@ -479,17 +400,6 @@ explorer-custom-tx = "https://ping.pub/Unification/tx"
 explorer-custom-account = "https://ping.pub/Unification/accounts"
 explorer-custom-validator = "https://ping.pub/Unification/staking"
 
-[chain]
-# The name of the chain as it appears in the cosmos chain registry
-name = "unification"
-
-[icns]
-# Rest URL to query for ICNS naming
-default = true
-
-# Ignored if default = true
-url = "https://lcd.osmosis.zone/"
-
 [chaininfo]
 # If default = true, reFUNDScan will use the information given by the cosmos chain registry for the chain name
 default = true
@@ -502,6 +412,13 @@ exponent = 9
 coin-gecko-id = "unification"
 bech32-prefix = "und"
 
+[icns]
+# Rest URL to query for ICNS naming
+default = true
+
+# Ignored if default = true
+rest = "https://lcd.osmosis.zone/"
+
 [connections]
 # If default = true, reFUNDScan will automatically attempt each of the RPCs and REST urls
 # given by the cosmos chain registry for the chain name until it find a valid one
@@ -509,21 +426,95 @@ default = true
 
 # The following will be ignored if default=true
 rest = "https://rest.unification.io/"
-websocket = "wss://rpc1.unification.io/websocket"
+websocket = "wss://rpc1.unification.io/websocket" 
 
-# Optionally define a list of wallets to be named when their account/val addresses are recognized
-[[wallet]]
-#name = "Burn Address 🔥"
-#addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
+[messages]
 
-[[wallet]]
-#name = "reFUND"
-#addr = "und1k03uvkkzmtkvfedufaxft75yqdfkfgvgm77zwm"
-#val-addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
+[messages.transfers]
+# Enable or disable this message type entirely
+enable = true
+
+# "default" means no filtering will take place, and will ignore the list
+# "whitelist" will enable whitelist mode for this message type
+# "blacklist" will enable blacklist mode for this message type
+filter = "default"
+
+# When filter is set to blacklist, Define a blacklist condition(s),
+# Conditions can be an address, memo, name, etc. If the string is recoginzed in the
+# message, it will prevent the message from sending.
+
+# Whitelist is the inverse of blacklist, this will ONLY allow messages that
+# contain an item defined in the list.
+list = [ "Delegate(rewards)", "Cosmostation" , "100100" ,"und1hdn830wndtquqxzaz3rds7r7hqgpsg5q9ggxpk" ]
+
+[messages.ibc-transfers-in]
+enable = true
+filter = "default"
+list = []
+[messages.ibc-transfers-out]
+enable = true
+filter = "default"
+list = []
+[messages.withdraw-rewards]
+enable = true
+filter = "default"
+list = []
+[messages.withdraw-commission]
+enable = true
+filter = "default"
+list = []
+[messages.delegations]
+enable = true
+filter = "default"
+list = []
+[messages.unlegations]
+enable = true
+filter = "default"
+list = []
+[messages.redelegations]
+enable = true
+filter = "default"
+list = []
+[messages.restake]
+enable = true
+filter = "default"
+list = []
+# Starname specific
+[messages.register-account]
+enable = true
+filter = "default"
+list = []
+[messages.register-domain]
+enable = true
+filter = "default"
+list = []
+[messages.transfer-account]
+enable = true
+filter = "default"
+list = []
+[messages.transfer-domain]
+enable = true
+filter = "default"
+list = []
+[messages.delete-account]
+enable = true
+filter = "default"
+list = []
+
+[address]
+# Optionally define a list of wallets to be named when their account/val addresses
+# are recognized.
+[[address.named]]
+name = "Burn Address 🔥"
+addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
+
+[[address.named]]
+name = "reFUND"
+addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
 `
-	// Write the content to the file
-	err := os.WriteFile(filePath + "/config.toml", []byte(file), 0644)
-	if err != nil {
+    // Write the content to the file
+    err := os.WriteFile(filePath + "/config.toml", []byte(file), 0644)
+    if err != nil {
         log.Fatal(color.RedString("Failed to write file: " , err))
-	}
+    }
 }

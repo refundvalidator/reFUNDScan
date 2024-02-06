@@ -6,15 +6,19 @@ Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
 
 ** Capabilities
 *** Current Features:
+- Monitor blockchain activity
 - Automatic Chain Configuration
-- Transfers
-- IBC Transfers
 - ICNS Namings
+- Explorer Tx/Account Hyperlinks
+- Transaction Filtering
+**** Transaction Support:
+- Transfers
+- IBC Transfers (Not tested with all chains)
 - Delegations
 - Undelegations
 - Redelegations
-- REStake Transactions
-*** Planned:
+- REStake Transactions (Not tested with all chains)
+**** Planned Support:
 - Governence Votes
 - Governence Progress
 - Validator Creations
@@ -62,7 +66,9 @@ You can alternatively define many of these parameters yourself, in the config.to
 
 In this file, you can also define which messages to send/ignore, as well as set custom naming for the hyperlinks
 the bot sends for a given address, by defining a new ~wallet~ field, with a couple examples predefined in the 
-config file itself. You also have the ability to switch which explorer the bot uses for its hyperlinks, the default
+config file itself. 
+
+You also have the ability to switch which explorer the bot uses for its hyperlinks, the default
 being [[https://ping.pub][ping.pub]], but other preset options such as [[https://atomscan.com][atomscan]], [[https://mintscan.io][mintscan]], and [[https://bigdipper.live][bigdipper]]. If these do not suit your needs,
 you can append custom values as well.
 ** reFUNDScan in action

@@ -4,8 +4,9 @@ import (
     "log"
     "fmt"
     "encoding/json"
+    "reflect"
 
-	"github.com/fatih/color"
+    "github.com/fatih/color"
     "github.com/gorilla/websocket"
 )
 
@@ -52,9 +53,13 @@ func Connect(resp chan string, restart chan bool) {
                 // TODO: governance votes, validator creations, validator edits 
                 // Fix small amounts displaying as 0.00
 
-                if ev == "/cosmos.bank.v1beta1.MsgSend" && config.Transfers {
+                var msgType MessageConfig 
+                msg := ""
+
+                if ev == "/cosmos.bank.v1beta1.MsgSend" && config.Messages.Transfers.Enabled {
+                    msgType = config.Messages.Transfers
                     // On Chain Transfers
-                    msg := "‎" +
+                    msg +=
                         mkBold("\n📬 Transfer 📬") +
                         mkBold("\n\nSender: ") +
                         mkAccountLink(events.TransferSender[0]) +
@@ -62,14 +67,11 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.TransferRecipient[1]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1]) 
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/ibc.applications.transfer.v1.MsgTransfer" && config.IBCOut {
+
+                } else if ev == "/ibc.applications.transfer.v1.MsgTransfer" && config.Messages.IBCOut.Enabled {
                     // FUND > Other Chain IBC
-                    msg := "‎" +
+                    msgType = config.Messages.IBCOut
+                    msg += 
                         mkBold("\n⚛️ IBC Transfer ⚛️") + 
                         mkBold("\n\nSender: ") +
                         mkAccountLink(events.IBCTransferSender[0]) +
@@ -77,14 +79,11 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.IBCTransferReciever[0]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" && config.Rewards {
+
+                } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" && config.Messages.Rewards.Enabled {
                      // Withdraw rewards
-                     msg := "‎" +
+                     msgType = config.Messages.Rewards
+                     msg +=
                          mkBold("\n💵 Withdraw Reward 💵") +
                          mkBold("\n\nDelegator: \n") +
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
@@ -96,27 +95,21 @@ func Connect(resp chan string, restart chan bool) {
                          total = totaler(events.WithdrawRewardsAmount[i])
                      }
                      msg += mkBold("\n\nTotal: \n") + mkTranscationLink(events.TxHash[0],total)
-                     if memo := getMemo(events.TxHash[0]); memo != "" {
-                         msg += mkBold("\nMemo: " + memo)
-                     }
-                     msg += "\n‎"
-                     resp <- msg 
-                } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission" && config.Commission {
+
+                } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission" && config.Messages.Commission.Enabled {
                      // Withdraw commission
-                     msg := "‎" +
+                     msgType = config.Messages.Commission
+                     msg +=
                          mkBold("\n💸 Withdraw Commission 💸") +
                          mkBold("\nValidator: ") +
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
                          mkBold("\nAmount: ") +
                          mkTranscationLink(events.TxHash[0],events.WithdrawCommissionAmount[0])
-                     if memo := getMemo(events.TxHash[0]); memo != "" {
-                         msg += mkBold("\nMemo: " + memo)
-                     }
-                     msg += "\n‎"
-                     resp <- msg 
-                } else if ev == "/cosmos.staking.v1beta1.MsgDelegate" && config.Delegations {
+
+                } else if ev == "/cosmos.staking.v1beta1.MsgDelegate" && config.Messages.Delegations.Enabled {
                     // Delegations
-                    msg := "‎" +
+                    msgType = config.Messages.Delegations
+                    msg +=
                         mkBold("\n❤️ Delegate ❤️") + 
                         mkBold("\n\nValidator: ") +
                         mkAccountLink(events.DelegateValidator[0]) +
@@ -124,14 +117,11 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.DelegateAmount[0])
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/cosmos.staking.v1beta1.MsgUndelegate" && config.Undelegations {
+
+                } else if ev == "/cosmos.staking.v1beta1.MsgUndelegate" && config.Messages.Undelegations.Enabled {
                     // Undelegations
-                    msg := "‎" +
+                    msgType = config.Messages.Undelegations
+                    msg +=
                         mkBold("\n💀 Undelegate 💀") + 
                         mkBold("\n\nValidator: ") +
                         mkAccountLink(events.UnbondValidator[0]) +
@@ -139,14 +129,11 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.UnbondAmount[0])
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/cosmos.staking.v1beta1.MsgBeginRedelegate" && config.Redelegations {
+
+                } else if ev == "/cosmos.staking.v1beta1.MsgBeginRedelegate" && config.Messages.Redelegations.Enabled {
                     // Redelegations
-                    msg := "‎" +
+                    msgType = config.Messages.Redelegations
+                    msg +=
                         mkBold("\n💞 Redelegate 💞") + 
                         mkBold("\n\nValidators: ") +
                         mkAccountLink(events.RedelegateSourceValidator[0]) +
@@ -156,14 +143,11 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.RedelegateAmount[0])
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/cosmos.authz.v1beta1.MsgExec" && config.Restake {
+
+                } else if ev == "/cosmos.authz.v1beta1.MsgExec" && config.Messages.Restake.Enabled {
                     // REStake Transactions
-                    msg := "‎" +
+                    msgType = config.Messages.Restake
+                    msg +=
                         mkBold("\n♻️ REStake ♻️") +
                         mkBold("\n\nValidator: \n") +
                         mkAccountLink(events.WithdrawRewardsValidator[0]) +
@@ -181,14 +165,11 @@ func Connect(resp chan string, restart chan bool) {
                         }
                     }
                     msg += mkBold("\nTotal REStaked: \n") + mkTranscationLink(events.TxHash[0],total) 
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\n\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/ibc.core.channel.v1.MsgRecvPacket" && config.IBCIn {
+
+                } else if ev == "/ibc.core.channel.v1.MsgRecvPacket" && config.Messages.IBCIn.Enabled {
                     // Other Chain > FUND IBC
-                    msg := "‎" +
+                    msgType = config.Messages.IBCIn
+                    msg +=
                         mkBold("\n⚛️ IBC Transfer ⚛️") +
                         mkBold("\n\nSender: ") +
                         mkAccountLink(events.IBCForeignSender[0]) +
@@ -196,76 +177,69 @@ func Connect(resp chan string, restart chan bool) {
                         mkAccountLink(events.TransferRecipient[1]) +
                         mkBold("\nAmount: ") +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
-                    if memo := getMemo(events.TxHash[0]); memo != "" {
-                        msg += mkBold("\nMemo: " + memo)
-                    }
-                    msg += "\n‎"
-                    resp <- msg 
-                } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterAccount" && config.RegisterAccount {
-					// Starname specific
-					//⭐️
 
-					// Register new Starname -> Account
-					msg := "‎" +
-						mkBold("\n⭐️️ Register Starname ⭐️️") +
-						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
-					//mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
-				} else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterDomain" && config.RegisterDomain {
-					// Register new Starname -> Domain
-					msg := "‎" +
-						mkBold("\n⭐️️ Register Starname ⭐️️") +
-						mkBold("\n\n*"+events.DomainName[0])
-					//mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
-				} else if ev == "/starnamed.x.starname.v1beta1.MsgTransferAccount" && config.TransferAccount {
-					// Register new Starname -> Domain
-					msg := "‎" +
-						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
-						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0]) +
-						mkBold("\n\nSender: ") +
-						mkAccountLink(events.MessageSender[0]) +
-						mkBold("\n\nRecipient: ") +
-						mkAccountLink(events.NewAccountOwner[0])
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterAccount" && config.Messages.RegisterAccount.Enabled {
+                    // Starname specific
+                    //⭐️
 
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
-				} else if ev == "/starnamed.x.starname.v1beta1.MsgTransferDomain" && config.TransferDomain {
-					// Register new Starname -> Domain
-					msg := "‎" +
-						mkBold("\n⭐️️ Transfer Starname ⭐️️") +
-						mkBold("\n\n*"+events.DomainName[0]) +
-						mkBold("\n\nSender: ") +
-						mkAccountLink(events.MessageSender[0]) +
-						mkBold("\n\nRecipient: ") +
-						mkAccountLink(events.NewDomainOwner[0])
+                    // Register new Starname -> Account
+                    msgType = config.Messages.RegisterAccount
+                    msg +=
+                        mkBold("\n⭐️️ Register Starname ⭐️️") +
+                        mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+                    //mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
 
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
-				} else if ev == "/starnamed.x.starname.v1beta1.MsgDeleteAccount" && config.DeleteAccount {
-					msg := "‎" +
-						mkBold("\n⭐️️ Delete Starname ⭐️️") +
-						mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
-					if memo := getMemo(events.TxHash[0]); memo != "" {
-						msg += mkBold("\nMemo: " + memo)
-					}
-					msg += "\n‎"
-					resp <- msg
-				}
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterDomain" && config.Messages.RegisterDomain.Enabled {
+                    // Register new Starname -> Domain
+                    msgType = config.Messages.RegisterDomain
+                    msg +=
+                        mkBold("\n⭐️️ Register Starname ⭐️️") +
+                        mkBold("\n\n*"+events.DomainName[0])
+                    //mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
+
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgTransferAccount" && config.Messages.TransferAccount.Enabled {
+                    // Register new Starname -> Domain
+                    msgType = config.Messages.TransferAccount
+                    msg +=
+                        mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+                        mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0]) +
+                        mkBold("\n\nSender: ") +
+                        mkAccountLink(events.MessageSender[0]) +
+                        mkBold("\n\nRecipient: ") +
+                        mkAccountLink(events.NewAccountOwner[0])
+
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgTransferDomain" && config.Messages.TransferDomain.Enabled {
+                    // Register new Starname -> Domain
+                    msgType = config.Messages.TransferDomain
+                    msg +=
+                        mkBold("\n⭐️️ Transfer Starname ⭐️️") +
+                        mkBold("\n\n*"+events.DomainName[0]) +
+                        mkBold("\n\nSender: ") +
+                        mkAccountLink(events.MessageSender[0]) +
+                        mkBold("\n\nRecipient: ") +
+                        mkAccountLink(events.NewDomainOwner[0])
+
+                } else if ev == "/starnamed.x.starname.v1beta1.MsgDeleteAccount" && config.Messages.DeleteAccount.Enabled {
+                    msgType = config.Messages.DeleteAccount
+                    msg +=
+                        mkBold("\n⭐️️ Delete Starname ⭐️️") +
+                        mkBold("\n\n"+events.AccountName[0]+"*"+events.DomainName[0])
+                }
+                // Ensure the msg is not blank
+                if msg == "" || reflect.DeepEqual(msgType, MessageConfig{}) {
+                    break
+                }
+                // Add the memo if it exists
+                if memo := getMemo(events.TxHash[0]); memo != "" {
+                    msg += mkBold("\nMemo: " + memo)
+                }
+                msg += "\n‎"
+                // Check if the message adhears to the white/blacklist
+                if !isAllowedMessage(msgType, msg) {
+                    break 
+                }
+                resp <- msg 
+                break
             }
         }
     }()
