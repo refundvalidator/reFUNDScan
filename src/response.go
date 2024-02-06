@@ -35,7 +35,7 @@ type ChainResponse struct {
 }
 type ICNSResponse struct {
     Data struct {
-        Name string `json:"name"`
+        PrimaryName string `json:"primary_name"`
     } `json:"data"`
 }
 type TxResponse struct {

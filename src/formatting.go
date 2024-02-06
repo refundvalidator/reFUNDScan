@@ -94,14 +94,14 @@ func getAccountName(msg string) string {
 
     // Check ICNS for name
     var icns ICNSResponse
-    query := fmt.Sprintf(`{ "primary_name": { "address": "%s" }}`, msg)
+    query := fmt.Sprintf(`{ "icns_names": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
     err := getData(config.ICNSAccount + b64, &icns)
     if err != nil {
         log.Println(color.YellowString("Failed to get ICNS response ", err))
     }
-    if icns.Data.Name != "" {
-        return icns.Data.Name + " (ICNS)"
+    if icns.Data.PrimaryName != "" {
+        return icns.Data.PrimaryName
     }
 
     // Return truncated addr if the addr isnt in the named map
@@ -113,6 +113,7 @@ func denomsToAmount() func(string) string{
     return func(msg string) string {
         var amount string
         var denom string
+        var index int
 
         switch msg[len(msg)-len(config.Denom):] {
         case config.Denom:
@@ -121,8 +122,15 @@ func denomsToAmount() func(string) string{
         default:
             // Other IBC denoms such as ibc/xxxx
             // IBC denom hash is always 64 chars + 4 chars for the ibc/
-            denom = msg[len(msg)-68:]
-            amount = msg[:len(msg)-68]
+            for i, c := range msg{
+                if _, err := strconv.Atoi(string(c)); err == nil {
+                    amount += string(c)
+                    index = i
+                } else {
+                    break
+                }           
+            }
+            denom = msg[index:]
         }
         numericalAmount, _ := strconv.ParseFloat(amount, 64)
         total += numericalAmount
@@ -135,8 +143,8 @@ func denomsToAmount() func(string) string{
 func denomToAmount(msg string) string {
     var amount string
     var denom string
+    var index int
 
-    // fmt.Println(msg)
     switch msg[len(msg)-len(config.Denom):] {
     case config.Denom:
         denom = config.Denom
@@ -144,8 +152,17 @@ func denomToAmount(msg string) string {
     default:
         // Other IBC denoms such as ibc/xxxx
         // IBC denom hash is always 64 chars + 4 chars for the ibc/
-        denom = msg[len(msg)-68:]
-        amount = msg[:len(msg)-68]
+        for i, c := range msg{
+            if _, err := strconv.Atoi(string(c)); err == nil {
+                amount += string(c)
+               index = i
+            } else {
+                break
+            }           
+        }
+        denom = msg[index:]
+        // denom = msg[len(msg)-68:]
+        // amount = msg[:len(msg)-68]
     }
 
     numericalAmount, _ := strconv.ParseFloat(amount, 64)
