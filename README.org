@@ -11,12 +11,15 @@ Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
 - ICNS Namings
 - Explorer Tx/Account Hyperlinks
 - Transaction Filtering
+- Telegram/Discord support
 **** Transaction Support:
 - Transfers
-- IBC Transfers (Not tested with all chains)
+- IBC Transfers In/Out (Not tested with all chains)
 - Delegations
 - Undelegations
 - Redelegations
+- Rewards Withdrawal (Not tested with all chains)
+- Comission Withdrawal (Not tested with all chains)
 - REStake Transactions (Not tested with all chains)
 **** Planned Support:
 - Governence Votes
@@ -36,13 +39,16 @@ Then run:
 #+begin_src bash
 cd reFUNDScan/src
 #+end_src
-In this directory, there is a ~config.toml~ file that the bot uses, you'll need to set your Telegram Chat-ID, API, and Chains' name
-as it appears in the [[https://github.com/cosmos/chain-registry][Cosmos Chain Registry]]. After filling out the custom information, you can run it with:
+Here, we can initialize our config file:
 #+begin_src bash
-go run . 
-# By default, the program will seach the Current Working Directory for a config.toml file, 
-# you can specify the path instead with:
-go run . --config ~/.refundscan/config.toml
+go run . --init --config /folder/to/generate/config/
+#+end_src
+You'll need to set your Telegram/Discord Chat-IDs and APIs here, as well as the
+Chains' name as it appears in the [[https://github.com/cosmos/chain-registry][Cosmos Chain Registry]]. 
+
+After filling out the custom information, you can run it with:
+#+begin_src bash
+go run . --config /folder/containing/config/
 #+end_src
 Or you can compile the binary yourself
 #+begin_src bash
@@ -53,7 +59,7 @@ Pre-compiled binaries can be found in the releases section of this repo
 
 If using one of the binary releases, you can generate a config file with:
 #+begin_src bash
-./refundscan --config ~/folder/to/generate/config/ --init
+./refundscan --init --config ~/folder/to/generate/config/
 #+end_src
 
 NOTE: reFUND scan is a Work In Progress, so things may not work as expected for some given chains. The 

@@ -16,10 +16,13 @@ import (
 
 // Config struct to represent the structure of the TOML file
 type ConfigFile struct {
-    Telegram struct{
-        ChatID string `toml:"chat-id"`
-        API    string `toml:"api"`
-    }`toml:"telegram"`
+    Clients struct{
+        Clients    []string `toml:"clients"`
+        TgAPI      string   `toml:"telegram-api"`
+        TgChatIDs  []string `toml:"telegram-chat-ids"`
+        DscAPI     string   `toml:"discord-api"`
+        DscChatIDs []string `toml:"discord-chat-ids"`
+    }`toml:"clients"`
     Chain struct {
         Name string
     }`toml:"chain"`
@@ -82,8 +85,11 @@ type MessagesConfig struct {
 
 
 type Config struct {
-    API             string
-    ChatID          string
+    Clients         []string
+    TgAPI           string
+    DscAPI          string
+    TgChatIDs       []string
+    DscChatIDs      []string
 
     Chain           string
     ChainPrettyName string
@@ -127,8 +133,11 @@ func (cfg *Config) parseConfig(filePath string) {
     if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
         log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
     }
-    cfg.API = configfile.Telegram.API
-    cfg.ChatID = configfile.Telegram.ChatID
+    cfg.Clients = configfile.Clients.Clients
+    cfg.TgAPI = configfile.Clients.TgAPI
+    cfg.TgChatIDs = configfile.Clients.TgChatIDs
+    cfg.DscAPI = configfile.Clients.DscAPI
+    cfg.DscChatIDs = configfile.Clients.DscChatIDs
     cfg.Chain = configfile.Chain.Name
     cfg.Messages = configfile.Messages
     cfg.Named = configfile.Address.Addresses
@@ -201,6 +210,9 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.Coin = configfile.ChainInfo.Coin
         cfg.Exponent = configfile.ChainInfo.Exponent
         cfg.CoinGeckoID = configfile.ChainInfo.CoinGeckoID
+    }
+    if len(cfg.Clients) == 0 {
+        log.Fatal(color.RedString("No client selected, check your config."))
     }
     switch configfile.Explorer.Preset {
     case "custom":
@@ -365,16 +377,30 @@ func (cfg *Config) validateConfig(){
 
 func initConfig(filePath string){
     file := `
-[telegram]
-# ChannelID for the channel to send messages to, ex @MyAwesomChannel
-chat-id = ""
+[clients]
+# Multiple messaging clients can be used at once
+# example: clients = [ "telegram", "discord" ]
+clients = [ "telegram" ]
+
+# Discord API Key
+# example: discord-api = "MTA0NzY2OTU1OTU5Mjb1OTtzNg.G3ZDLz.xaONq-mqDaX5Zv5K-Fx5dDQxnooOdP7gOWOc4Q"
+discord-api = ""
+
+# Chat ID of the channels to send the message to, mulitple can be used at once
+# example: discord-chat-ids = [ "1125944525457975326", "1125944523659096234"]
+discord-chat-ids = [ "" ]
 
 # Telegram bot token given by the botfather
-api = ""
+# example: telegram-api = "5750057848:AAGb4KvbF6FP6-1GmV5Kaun8WSukLpePLXF"
+telegram-api = ""
+
+# ChannelIDs for the channels to send messages to, multiple can be used at once
+# example: telegram-chat-ids = [ "@MyAwesomeChannel", "@MyAwesomeChannel2"]
+telegram-chat-ids = [ "" ]
 
 [chain]
 # The name of the chain as it appears in the cosmos chain registry
-# example: osmosis, cosmos, unification
+# example: name = "osmosis"
 name = "unification"
 
 
@@ -448,19 +474,19 @@ filter = "default"
 list = [ "Delegate(rewards)", "Cosmostation" , "100100" ,"und1hdn830wndtquqxzaz3rds7r7hqgpsg5q9ggxpk" ]
 
 [messages.ibc-transfers-in]
-enable = true
+enable = false
 filter = "default"
 list = []
 [messages.ibc-transfers-out]
-enable = true
+enable = false
 filter = "default"
 list = []
 [messages.withdraw-rewards]
-enable = true
+enable = false
 filter = "default"
 list = []
 [messages.withdraw-commission]
-enable = true
+enable = false
 filter = "default"
 list = []
 [messages.delegations]
@@ -476,7 +502,7 @@ enable = true
 filter = "default"
 list = []
 [messages.restake]
-enable = true
+enable = false
 filter = "default"
 list = []
 # Starname specific
