@@ -21,28 +21,28 @@ var (
 
 // Places a string in HTML bold brackets
 func mkBold(msg string) string{
-    return fmt.Sprintf("<b>%s</b>",msg)
+    return fmt.Sprintf("**%s**",msg)
 }
 
 // Returns and HTML formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
     switch addr[:len(config.Bech32Prefix + "val")]{
     case config.Bech32Prefix + "val":
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerValidator,addr,getAccountName(addr))
+        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),config.ExplorerValidator,addr)
     }
     switch addr[:3]{
     case "osm":
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",osmoExplorerAccount,addr,getAccountName(addr))
+        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),osmoExplorerAccount,addr)
     case "gra":
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",gravExplorerAccount,addr,getAccountName(addr))
+        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),gravExplorerAccount,addr)
     default:
-        return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerAccount,addr,getAccountName(addr))
+        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),config.ExplorerAccount,addr)
     }
 }
 
 // Returns a HTML formatted hyprlink for a transaction when given a TX Hash with an amount
 func mkTranscationLink(hash string, amount string) string {
-    return fmt.Sprintf("<a href=\"%s%s\">%s</a>",config.ExplorerTx,hash,denomToAmount(amount))
+    return fmt.Sprintf("**[%s](%s%s)**", denomToAmount(amount), config.ExplorerTx,hash)
 }
 
 // When given a transaction hash

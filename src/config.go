@@ -214,6 +214,7 @@ func (cfg *Config) parseConfig(filePath string) {
     if len(cfg.Clients) == 0 {
         log.Fatal(color.RedString("No client selected, check your config."))
     }
+
     switch configfile.Explorer.Preset {
     case "custom":
         cfg.ExplorerTx = configfile.Explorer.Tx
@@ -367,7 +368,9 @@ func (cfg *Config) validateConfig(){
     //Format the information
     cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
     cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
-    cfg.ChainPrettyName = strings.ReplaceAll(cfg.ChainPrettyName," ","-")
+    cfg.ExplorerAccount = strings.ReplaceAll(cfg.ExplorerAccount," ","-")
+    cfg.ExplorerValidator = strings.ReplaceAll(cfg.ExplorerValidator," ","-")
+    cfg.ExplorerTx = strings.ReplaceAll(cfg.ExplorerTx," ","-")
     cfg.RestTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
     cfg.RestCoinGecko = "https://api.coingecko.com/api/v3/coins/" + cfg.CoinGeckoID
     cfg.RestValidators = cfg.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
@@ -532,7 +535,7 @@ list = []
 # are recognized.
 [[address.named]]
 name = "Burn Address 🔥"
-addr = "und18mcmhkq6fmhu9hpy3sx5cugqwv6z0wrz7nn5d7"
+addr = "und1qqqqqqqqqqqqqqqqqqqqqqqqqqqqph4djz5txt"
 
 [[address.named]]
 name = "reFUND"

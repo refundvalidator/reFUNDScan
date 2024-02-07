@@ -14,12 +14,12 @@ Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
 - Telegram/Discord support
 **** Transaction Support:
 - Transfers
-- IBC Transfers In/Out (Not tested with all chains)
+- IBC Transfers In/Out
 - Delegations
 - Undelegations
 - Redelegations
-- Rewards Withdrawal (Not tested with all chains)
-- Comission Withdrawal (Not tested with all chains)
+- Rewards Withdrawal
+- Comission Withdrawal
 - REStake Transactions (Not tested with all chains)
 **** Planned Support:
 - Governence Votes
