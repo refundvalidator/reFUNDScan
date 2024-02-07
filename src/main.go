@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"time"
+    "fmt"
 
 	discord "github.com/bwmarrin/discordgo"
 	"github.com/fatih/color"
@@ -90,22 +91,27 @@ func main(){
                     case "telegram":
                         for _, chat := range config.TgChatIDs {
                             msg := telegram.NewMessageToChannel(chat, message)
-                            msg.ParseMode = telegram.ModeHTML
+                            msg.ParseMode = telegram.ModeMarkdown
                             msg.DisableWebPagePreview = true
                             _, err := tgbot.Send(msg)
                             if err != nil {
-                                log.Println(color.YellowString("Could not sent telegram message, check your internet connection or ChatID"))
+                                log.Println(color.YellowString("Could not sent telegram message, check your internet connection or ChatID", err))
                             }
-                            log.Println(color.BlueString(message))
                         }
                     case "discord":
                         for _, chat := range config.DscChatIDs {
-                            _, err := dscbot.ChannelMessageSend(chat, message)
+                            embd := discord.MessageEmbed {
+                                Description: message, 
+                                Color: 5793266,
+                                Timestamp: fmt.Sprint(time.Now().Format(time.RFC3339)),
+                            }
+                            _, err := dscbot.ChannelMessageSendEmbed(chat, &embd)
                             if err != nil {
-                                log.Println(color.YellowString("Could not sent discord message, check your internet connection or ChatID"))
+                                log.Println(color.YellowString("Could not sent discord message, check your internet connection or ChatID", err))
                             }
                         }
                     }
+                    log.Println(color.BlueString(message))
             }
             case <- restart:
                 log.Println(color.BlueString("Restarting websocket connection in 10 seconds"))
