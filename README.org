@@ -52,8 +52,8 @@ go run . --config /folder/containing/config/
 #+end_src
 Or you can compile the binary yourself
 #+begin_src bash
-go build -o bot .
-./bot --config ~/.refundscan
+go build -o refundscan .
+./refundscan --config ~/.refundscan
 #+end_src
 Pre-compiled binaries can be found in the releases section of this repo
 

@@ -76,7 +76,7 @@ type WebsocketResponse struct {
             TransferSender                 []string `json:"transfer.sender"`
             TransferRecipient              []string `json:"transfer.recipient"`
             IBCTransferSender              []string `json:"ibc_transfer.sender"`
-            IBCTransferReciever            []string `json:"ibc_transfer.receiver"`
+            IBCTransferRecipient            []string `json:"ibc_transfer.receiver"`
             IBCForeignSender               []string `json:"fungible_token_packet.sender"`
             TransferAmount                 []string `json:"transfer.amount"`
             TxHash                         []string `json:"tx.hash"`
