@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+    "regexp"
 	"strings"
 	"time"
     "fmt"
@@ -89,8 +90,9 @@ func main(){
                 for _, client := range config.Clients {
                     switch client {
                     case "telegram":
+                        tgMessage := strings.ReplaceAll(message,"**","*")
                         for _, chat := range config.TgChatIDs {
-                            msg := telegram.NewMessageToChannel(chat, message)
+                            msg := telegram.NewMessageToChannel(chat, tgMessage)
                             msg.ParseMode = telegram.ModeMarkdown
                             msg.DisableWebPagePreview = true
                             _, err := tgbot.Send(msg)
@@ -99,9 +101,11 @@ func main(){
                             }
                         }
                     case "discord":
+                        // Define the regular expression pattern
+                        dscMessage := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`).ReplaceAllString(message, "**[$1]($2)**")
                         for _, chat := range config.DscChatIDs {
                             embd := discord.MessageEmbed {
-                                Description: message, 
+                                Description: dscMessage, 
                                 Color: 5793266,
                                 Timestamp: fmt.Sprint(time.Now().Format(time.RFC3339)),
                             }

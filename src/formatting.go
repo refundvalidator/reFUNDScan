@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+    "regexp"
 	"strconv"
 	"strings"
 
@@ -14,35 +15,40 @@ import (
 	"golang.org/x/text/message"
 )
 
+// TODO:
+// Split-up this file, maybe helpers.go?
+
+// TODO:
+// Remove the need for these pre-defined URLs for universal links
 var (
     osmoExplorerAccount = "https://www.mintscan.io/osmosis/address/"
     gravExplorerAccount = "https://www.mintscan.io/gravity-bridge/address/"
 )
 
-// Places a string in HTML bold brackets
+// Places a string in MD bold brackets
 func mkBold(msg string) string{
     return fmt.Sprintf("**%s**",msg)
 }
 
-// Returns and HTML formatted hyperlink for an account when given a wallet or validator address
+// Returns and MD formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
     switch addr[:len(config.Bech32Prefix + "val")]{
     case config.Bech32Prefix + "val":
-        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),config.ExplorerValidator,addr)
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerValidator,addr)
     }
     switch addr[:3]{
     case "osm":
-        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),osmoExplorerAccount,addr)
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),osmoExplorerAccount,addr)
     case "gra":
-        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),gravExplorerAccount,addr)
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),gravExplorerAccount,addr)
     default:
-        return fmt.Sprintf("**[%s](%s%s)**",getAccountName(addr),config.ExplorerAccount,addr)
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerAccount,addr)
     }
 }
 
-// Returns a HTML formatted hyprlink for a transaction when given a TX Hash with an amount
+// Returns a MD formatted hyprlink for a transaction when given a TX Hash with an amount
 func mkTranscationLink(hash string, amount string) string {
-    return fmt.Sprintf("**[%s](%s%s)**", denomToAmount(amount), config.ExplorerTx,hash)
+    return fmt.Sprintf("[%s](%s%s)", denomToAmount(amount), config.ExplorerTx,hash)
 }
 
 // When given a transaction hash
@@ -60,7 +66,8 @@ func getMemo(hash string) string {
 // When given a wallet or validator address, returns the name associated with the wallet, if it has one
 // Otherwise returns a truncated version of the wallet address
 func getAccountName(msg string) string {
-
+    // Banned characters, interefere's with markdown
+	msg = regexp.MustCompile(`[\[\]\(\)*]`).ReplaceAllString(msg, "")
     // Known account names
     names := map[string][]string{}
     // Convert undval to und1 addresses and append to map
@@ -108,6 +115,9 @@ func getAccountName(msg string) string {
     return fmt.Sprintf("%s...%s",msg[:7],msg[len(msg)-7:])
 }
 
+// TODO: Split up this functinon, and create a config file entry 
+// to set custom IBC's
+// Also, setup predefined IBC's using the chains' assetlist
 func denomsToAmount() func(string) string{
     var total float64
     return func(msg string) string {
@@ -189,6 +199,7 @@ func denomToAmount(msg string) string {
 }
 
 // Checks if the message is allowed to send based on the whitelist/blacklist rules defined
+// TODO: use regex to ensure the string is clean for query (remove **, urls, etc)
 func isAllowedMessage (config MessageConfig, msg string) bool {
     switch config.Filter {
     case "blacklist":
@@ -211,3 +222,4 @@ func isAllowedMessage (config MessageConfig, msg string) bool {
         return true
     }
 }
+// TODO: isAllowedMessage
