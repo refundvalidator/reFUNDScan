@@ -43,17 +43,13 @@ func init(){
     config.parseConfig(configpath)
     // config.showConfig()
 }
-type MessageResponse struct {
-    TgResponse chan string
-    DscResponse chan discord.MessageEmbed
-}
 
 // Start the telegram bot and listen for messages from the resp channel
 func main(){
     var err error
     interrupt := make(chan os.Signal, 1) 
     signal.Notify(interrupt, os.Interrupt) 
-    resp := make(chan string)
+    resp := make(chan MessageResponse)
     restart := make(chan bool)
 
     for _, client := range config.Clients{
@@ -90,7 +86,7 @@ func main(){
                 for _, client := range config.Clients {
                     switch client {
                     case "telegram":
-                        tgMessage := strings.ReplaceAll(message,"**","*")
+                        tgMessage := strings.ReplaceAll(message.Message,"**","*")
                         for _, chat := range config.TgChatIDs {
                             msg := telegram.NewMessageToChannel(chat, tgMessage)
                             msg.ParseMode = telegram.ModeMarkdown
@@ -99,10 +95,13 @@ func main(){
                             if err != nil {
                                 log.Println(color.YellowString("Could not sent telegram message, check your internet connection or ChatID", err))
                             }
+                            logMsg := fmt.Sprintf("Send message of type %s to Telegram Channel: %s",message.TypeName, chat)
+                            log.Println(color.BlueString(logMsg))
+
                         }
                     case "discord":
                         // Define the regular expression pattern
-                        dscMessage := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`).ReplaceAllString(message, "**[$1]($2)**")
+                        dscMessage := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`).ReplaceAllString(message.Message, "**[$1]($2)**")
                         for _, chat := range config.DscChatIDs {
                             embd := discord.MessageEmbed {
                                 Description: dscMessage, 
@@ -113,9 +112,11 @@ func main(){
                             if err != nil {
                                 log.Println(color.YellowString("Could not sent discord message, check your internet connection or ChatID", err))
                             }
+                            logMsg := fmt.Sprintf("Send message of type %s to Discord Channel: %s",message.TypeName, chat)
+                            log.Println(color.BlueString(logMsg))
                         }
                     }
-                    log.Println(color.BlueString(message))
+                    // log.Println(color.BlueString(message.Message))
             }
             case <- restart:
                 log.Println(color.BlueString("Restarting websocket connection in 10 seconds"))

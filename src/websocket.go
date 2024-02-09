@@ -9,9 +9,14 @@ import (
     "github.com/fatih/color"
     "github.com/gorilla/websocket"
 )
-
+type MessageResponse struct {
+   Type     MessageConfig 
+   TypeName string
+   Amount   string 
+   Message  string
+}
 // Connect to the websocket and serve the formatted responses to the given channel resp
-func Connect(resp chan string, restart chan bool) {
+func Connect(resp chan MessageResponse, restart chan bool) {
     c, _, err := websocket.DefaultDialer.Dial(config.WebsocketURL, nil)  
     if err != nil{
         log.Println(color.YellowString("Failed to dial websocket: ", err))
@@ -54,13 +59,13 @@ func Connect(resp chan string, restart chan bool) {
                 // Fix small amounts displaying as 0.00: maybe not <?
                 // Split this file, maybe into messages.go?
 
-                var msgType MessageConfig 
-                msg := ""
+                var msg MessageResponse
 
                 if ev == "/cosmos.bank.v1beta1.MsgSend" && config.Messages.Transfers.Enabled {
-                    msgType = config.Messages.Transfers
+                    msg.Type = config.Messages.Transfers
+                    msg.TypeName = "Transfer"
                     // On Chain Transfers
-                    msg +=
+                    msg.Message +=
                         "\n** 📬 Transfer 📬 **" +
                         "\n\n**Sender:** " +
                         mkAccountLink(events.TransferSender[0]) +
@@ -71,8 +76,9 @@ func Connect(resp chan string, restart chan bool) {
 
                 } else if ev == "/ibc.applications.transfer.v1.MsgTransfer" && config.Messages.IBCOut.Enabled {
                     // FUND > Other Chain IBC
-                    msgType = config.Messages.IBCOut
-                    msg += 
+                    msg.Type = config.Messages.IBCOut
+                    msg.TypeName = "IBCOut"
+                    msg.Message += 
                         "\n** ⚛️ IBC Transfer ⚛️ **" + 
                         "\n\n**Sender:** " +
                         mkAccountLink(events.IBCTransferSender[0]) +
@@ -81,28 +87,29 @@ func Connect(resp chan string, restart chan bool) {
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
 
-                // Allow both this msg and comission 
                 } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" && config.Messages.Rewards.Enabled {
                      // Withdraw rewards
-                     msgType = config.Messages.Rewards
-                     msg +=
+                     msg.Type = config.Messages.Rewards
+                     msg.TypeName = "Rewards"
+                     msg.Message +=
                          "\n** 💵 Withdraw Reward 💵 **" +
                          "\n\n**Delegator:** \n" +
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
                          "\n\n**Validators:** "
-                     totaler := denomsToAmount()
                      var total string
+                     totaler := denomTotaler()
                      for i, val := range events.WithdrawRewardsValidator{
-                         msg += fmt.Sprintf("\n%s\n%s",mkAccountLink(val), denomToAmount(events.WithdrawRewardsAmount[i]))
+                         msg.Message += fmt.Sprintf("\n%s\n%s",mkAccountLink(val), denomToAmount(events.WithdrawRewardsAmount[i]))
                          total = totaler(events.WithdrawRewardsAmount[i])
                      }
-                     msg += "\n\n**Total:** \n" + mkTranscationLink(events.TxHash[0],total)
+                     msg.Message += "\n\n**Total:** \n" + mkTranscationLink(events.TxHash[0],total)
 
-                // Never fires, because Rewards withdrawl will always trigger first 
+                // FIXME Never fires, because Rewards withdrawl will always trigger first 
                 } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission" && config.Messages.Commission.Enabled {
                      // Withdraw commission
-                     msgType = config.Messages.Commission
-                     msg +=
+                     msg.Type = config.Messages.Commission
+                     msg.TypeName = "Commission"
+                     msg.Message +=
                          "\n** 💸 Withdraw Commission 💸 **" +
                          "\n**Validator:** " +
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
@@ -111,8 +118,9 @@ func Connect(resp chan string, restart chan bool) {
                 
                 } else if ev == "/cosmos.staking.v1beta1.MsgDelegate" && config.Messages.Delegations.Enabled {
                     // Delegations
-                    msgType = config.Messages.Delegations
-                    msg +=
+                    msg.Type = config.Messages.Delegations
+                    msg.TypeName = "Delegations"
+                    msg.Message +=
                         "\n** ❤️ Delegate ❤️ **"+ 
                         "\n\n**Validator:** " +
                         mkAccountLink(events.DelegateValidator[0]) +
@@ -123,8 +131,9 @@ func Connect(resp chan string, restart chan bool) {
 
                 } else if ev == "/cosmos.staking.v1beta1.MsgUndelegate" && config.Messages.Undelegations.Enabled {
                     // Undelegations
-                    msgType = config.Messages.Undelegations
-                    msg +=
+                    msg.Type = config.Messages.Undelegations
+                    msg.TypeName = "Undelegations"
+                    msg.Message +=
                         "\n** 💀 Undelegate 💀 **" + 
                         "\n\n**Validator:** " +
                         mkAccountLink(events.UnbondValidator[0]) +
@@ -135,8 +144,9 @@ func Connect(resp chan string, restart chan bool) {
 
                 } else if ev == "/cosmos.staking.v1beta1.MsgBeginRedelegate" && config.Messages.Redelegations.Enabled {
                     // Redelegations
-                    msgType = config.Messages.Redelegations
-                    msg +=
+                    msg.Type = config.Messages.Redelegations
+                    msg.TypeName = "Redelegations"
+                    msg.Message +=
                         "\n** 💞 Redelegate 💞 **" + 
                         "\n\n**Validators:** " +
                         mkAccountLink(events.RedelegateSourceValidator[0]) +
@@ -149,30 +159,33 @@ func Connect(resp chan string, restart chan bool) {
                 // TODO: This breaks on most chains
                 } else if ev == "/cosmos.authz.v1beta1.MsgExec" && config.Messages.Restake.Enabled {
                     // REStake Transactions
-                    msgType = config.Messages.Restake
-                    msg +=
+                    msg.Type = config.Messages.Restake
+                    msg.TypeName = "Restake"
+                    msg.Message +=
                         "\n** ♻️ REStake ♻️ **" +
                         "\n\n**Validator:** \n" +
                         mkAccountLink(events.WithdrawRewardsValidator[0]) +
                         "\n\n**Delegators:** "
                     j := 0
                     var total string
-                    totaler := denomsToAmount()
+                    totaler := denomTotaler()
                     for i, delegator := range events.MessageSender {
                         if i >= 2 {
                             if i % 2 == 0 {
                                 j += 1
-                                msg += fmt.Sprintf("\n%s\n%s", mkAccountLink(delegator) ,denomToAmount(events.TransferAmount[j]))
+                                msg.Message += fmt.Sprintf("\n%s\n%s", mkAccountLink(delegator) ,denomToAmount(events.TransferAmount[j]))
                                 total = totaler(events.TransferAmount[j])
                             }
                         }
                     }
-                    msg += "\n\n**Total REStaked:** \n" + mkTranscationLink(events.TxHash[0],total) + "\n"
+                    fmtTotal := denomToAmount(total)
+                    msg.Message += "\n\n**Total REStaked:** \n" + mkTranscationLink(events.TxHash[0],fmtTotal) + "\n"
 
                 } else if ev == "/ibc.core.channel.v1.MsgRecvPacket" && config.Messages.IBCIn.Enabled {
                     // Other Chain > FUND IBC
-                    msgType = config.Messages.IBCIn
-                    msg +=
+                    msg.Type = config.Messages.IBCIn
+                    msg.TypeName = "IBCIn"
+                    msg.Message +=
                         "\n** ⚛️ IBC Transfer ⚛️ **" +
                         "\n\n**Sender:** " +
                         mkAccountLink(events.IBCForeignSender[0]) +
@@ -186,24 +199,27 @@ func Connect(resp chan string, restart chan bool) {
                     //⭐️
 
                     // Register new Starname -> Account
-                    msgType = config.Messages.RegisterAccount
-                    msg +=
+                    msg.Type = config.Messages.RegisterAccount
+                    msg.TypeName = "RegisterAccount"
+                    msg.Message +=
                         "\n** ⭐️️ Register Starname ⭐ **" +
                         "\n\n"+events.AccountName[0]+"*"+events.DomainName[0]
                     //mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterDomain" && config.Messages.RegisterDomain.Enabled {
                     // Register new Starname -> Domain
-                    msgType = config.Messages.RegisterDomain
-                    msg +=
+                    msg.Type = config.Messages.RegisterDomain
+                    msg.TypeName = "RegisterDomain"
+                    msg.Message +=
                         "\n** ⭐️️ Register Starname ⭐ **" +
                         "\n\n*"+events.DomainName[0]
                     //mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgTransferAccount" && config.Messages.TransferAccount.Enabled {
                     // Register new Starname -> Domain
-                    msgType = config.Messages.TransferAccount
-                    msg +=
+                    msg.Type = config.Messages.TransferAccount
+                    msg.TypeName = "TransferAccount"
+                    msg.Message +=
                         "\n** ⭐️️ Transfer Starname ⭐ **" +
                         "\n\n"+events.AccountName[0]+"*"+events.DomainName[0] +
                         "\n\n**Sender:** " +
@@ -213,36 +229,38 @@ func Connect(resp chan string, restart chan bool) {
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgTransferDomain" && config.Messages.TransferDomain.Enabled {
                     // Register new Starname -> Domain
-                    msgType = config.Messages.TransferDomain
-                    msg +=
+                    msg.Type = config.Messages.TransferDomain
+                    msg.TypeName = "TransferDomain"
+                    msg.Message +=
                         "\n** ⭐️️ Transfer Starname ⭐ **" +
-                        "\n\n*"+ mkBold(events.DomainName[0]) +
+                        "\n\n*"+ events.DomainName[0] +
                         "\n\n**Sender:** " +
                         mkAccountLink(events.MessageSender[0]) +
                         "\n\n**Recipient:** " +
                         mkAccountLink(events.NewDomainOwner[0])
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgDeleteAccount" && config.Messages.DeleteAccount.Enabled {
-                    msgType = config.Messages.DeleteAccount
-                    msg +=
+                    msg.Type = config.Messages.DeleteAccount
+                    msg.TypeName = "DeleteAccount"
+                    msg.Message +=
                         "\n** ⭐️️ Delete Starname ⭐ **" +
                         "\n\n"+events.AccountName[0]+"*"+events.DomainName[0]
                 }
                 // Ensure the msg is not blank
-                if msg == "" || reflect.DeepEqual(msgType, MessageConfig{}) {
+                if msg.Message == "" || reflect.DeepEqual(msg.Type, MessageConfig{}) {
                     break
                 }
                 // Add the memo if it exists
                 if memo := getMemo(events.TxHash[0]); memo != "" {
-                    msg += "\n**Memo: " + memo + "**"
+                    msg.Message += "\n**Memo: " + memo + "**"
                 }
                 // Top and bottom padding on the message using whitespace
-                msg = "\n‎" + msg + "\n‎"
+                msg.Message = "\n‎" + msg.Message + "\n‎"
                 // Check if the message adhears to the white/blacklist
-                if !isAllowedMessage(msgType, msg) {
+                if !isAllowedMessage(msg.Type, msg.Message) {
                     break 
                 }
-                resp <- msg 
+                resp <- msg
                 break
             }
         }
