@@ -94,9 +94,10 @@ func main(){
                             _, err := tgbot.Send(msg)
                             if err != nil {
                                 log.Println(color.YellowString("Could not sent telegram message, check your internet connection or ChatID", err))
+                            } else {
+                                logMsg := fmt.Sprintf("Sent message of type %s to Telegram Channel: %s",message.TypeName, chat)
+                                log.Println(color.BlueString(logMsg))
                             }
-                            logMsg := fmt.Sprintf("Send message of type %s to Telegram Channel: %s",message.TypeName, chat)
-                            log.Println(color.BlueString(logMsg))
 
                         }
                     case "discord":
@@ -111,9 +112,10 @@ func main(){
                             _, err := dscbot.ChannelMessageSendEmbed(chat, &embd)
                             if err != nil {
                                 log.Println(color.YellowString("Could not sent discord message, check your internet connection or ChatID", err))
+                            } else {
+                                logMsg := fmt.Sprintf("Sent message of type %s to Discord Channel: %s",message.TypeName, chat)
+                                log.Println(color.BlueString(logMsg))
                             }
-                            logMsg := fmt.Sprintf("Send message of type %s to Discord Channel: %s",message.TypeName, chat)
-                            log.Println(color.BlueString(logMsg))
                         }
                     }
                     // log.Println(color.BlueString(message.Message))

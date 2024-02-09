@@ -496,7 +496,7 @@ list = []
 enable = true
 filter = "default"
 list = []
-[messages.unlegations]
+[messages.undelegations]
 enable = true
 filter = "default"
 list = []

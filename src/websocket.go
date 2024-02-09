@@ -178,8 +178,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                             }
                         }
                     }
-                    fmtTotal := denomToAmount(total)
-                    msg.Message += "\n\n**Total REStaked:** \n" + mkTranscationLink(events.TxHash[0],fmtTotal) + "\n"
+                    msg.Message += "\n\n**Total REStaked:** \n" + mkTranscationLink(events.TxHash[0],total) + "\n"
 
                 } else if ev == "/ibc.core.channel.v1.MsgRecvPacket" && config.Messages.IBCIn.Enabled {
                     // Other Chain > FUND IBC
