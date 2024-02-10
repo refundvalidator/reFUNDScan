@@ -73,6 +73,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.TransferRecipient[1]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1]) 
+                    if !isAllowedAmount(msg, events.TransferAmount[1]) {
+                        break
+                    }
 
                 } else if ev == "/ibc.applications.transfer.v1.MsgTransfer" && config.Messages.IBCOut.Enabled {
                     // FUND > Other Chain IBC
@@ -86,6 +89,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.IBCTransferRecipient[0]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
+                    if !isAllowedAmount(msg, events.TransferAmount[1]) {
+                        break
+                    }
 
                 // FIXME: throws out of index errors
                 } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" && config.Messages.Rewards.Enabled {
@@ -104,6 +110,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                          total = totaler(events.WithdrawRewardsAmount[i])
                      }
                      msg.Message += "\n\n**Total:** \n" + mkTranscationLink(events.TxHash[0],total)
+                    if !isAllowedAmount(msg, total) {
+                        break
+                    }
 
                 // FIXME Never fires, because Rewards withdrawl will always trigger first 
                 } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission" && config.Messages.Commission.Enabled {
@@ -116,7 +125,10 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
                          "\n**Amount:** " +
                          mkTranscationLink(events.TxHash[0],events.WithdrawCommissionAmount[0])
-                
+                    if !isAllowedAmount(msg, events.WithdrawCommissionAmount[0]) {
+                        break
+                    }               
+
                 } else if ev == "/cosmos.staking.v1beta1.MsgDelegate" && config.Messages.Delegations.Enabled {
                     // Delegations
                     msg.Type = config.Messages.Delegations
@@ -129,6 +141,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.DelegateAmount[0])
+                    if !isAllowedAmount(msg, events.DelegateAmount[0]) {
+                        break
+                    }
 
                 } else if ev == "/cosmos.staking.v1beta1.MsgUndelegate" && config.Messages.Undelegations.Enabled {
                     // Undelegations
@@ -142,6 +157,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.UnbondAmount[0])
+                    if !isAllowedAmount(msg, events.UnbondAmount[0]) {
+                        break
+                    }
 
                 } else if ev == "/cosmos.staking.v1beta1.MsgBeginRedelegate" && config.Messages.Redelegations.Enabled {
                     // Redelegations
@@ -157,6 +175,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.MessageSender[0]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.RedelegateAmount[0])
+                    if !isAllowedAmount(msg, events.RedelegateAmount[0]) {
+                        break
+                    }
                 // TODO: This breaks on most chains
                 } else if ev == "/cosmos.authz.v1beta1.MsgExec" && config.Messages.Restake.Enabled {
                     // REStake Transactions
@@ -180,6 +201,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         }
                     }
                     msg.Message += "\n\n**Total REStaked:** \n" + mkTranscationLink(events.TxHash[0],total) + "\n"
+                    if !isAllowedAmount(msg, total) {
+                        break
+                    }
 
                 } else if ev == "/ibc.core.channel.v1.MsgRecvPacket" && config.Messages.IBCIn.Enabled {
                     // Other Chain > FUND IBC
@@ -193,6 +217,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         mkAccountLink(events.TransferRecipient[1]) +
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
+                    if !isAllowedAmount(msg, events.TransferAmount[1]) {
+                        break
+                    }
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterAccount" && config.Messages.RegisterAccount.Enabled {
                     // Starname specific
@@ -204,6 +231,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                     msg.Message +=
                         "\n** ⭐️️ Register Starname ⭐ **" +
                         "\n\n"+events.AccountName[0]+"*"+events.DomainName[0]
+
                     //mkTranscationLink(events.TxHash[0], events.Registerer[0]) <--- Works only with amounts :(
 
                 } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterDomain" && config.Messages.RegisterDomain.Enabled {
@@ -257,7 +285,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                 // Top and bottom padding on the message using whitespace
                 msg.Message = "\n‎" + msg.Message + "\n‎"
                 // Check if the message adhears to the white/blacklist
-                if !isAllowedMessage(msg.Type, msg.Message) {
+                if !isAllowedMessage(msg) {
                     break 
                 }
                 resp <- msg
