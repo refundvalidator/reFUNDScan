@@ -1,17 +1,18 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "time"
-    "strings"
-    "net/url"
-    "net/http"
-    "os"
+	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"reflect"
+	"strings"
+	"time"
 
-    "github.com/BurntSushi/toml"
-    "github.com/fatih/color"
-    "github.com/gorilla/websocket"
+	"github.com/BurntSushi/toml"
+	"github.com/fatih/color"
+	"github.com/gorilla/websocket"
 )
 
 // Config struct to represent the structure of the TOML file
@@ -67,6 +68,7 @@ type MessageConfig struct {
     WhiteBlackList []string `toml:"list"`
 }
 type MessagesConfig struct {
+    Currency        string        `toml:"currency"`
     Transfers       MessageConfig `toml:"transfers"`
     IBCIn           MessageConfig `toml:"ibc-transfers-in"`
     IBCOut          MessageConfig `toml:"ibc-transfers-out"`
@@ -96,6 +98,7 @@ type Config struct {
     Coin            string
     Denom           string
     CoinGeckoID     string
+    Currency        float64
     Bech32Prefix    string
     Exponent        int
 
@@ -271,6 +274,19 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     }
+    r := reflect.ValueOf(cg.MarketData.CurrentPrice)
+    success := false
+    for i := 0; i < r.NumField(); i++ {
+        // fmt.Println(strings.ToLower(r.Type().Field(i).Name))
+        if strings.ToLower(configfile.Messages.Currency) == strings.ToLower(r.Type().Field(i).Name) {
+            cfg.Currency = r.Field(i).Interface().(float64)
+            success = true
+        }
+    }
+    if !success {
+        log.Fatal("Invalid Currency Type")
+    }
+    
     cfg.validateConfig()
 }
 func (cfg *Config) validateConfig(){
@@ -458,6 +474,10 @@ rest = "https://rest.unification.io/"
 websocket = "wss://rpc1.unification.io/websocket" 
 
 [messages]
+
+# Currency to display for the messages.
+# example: ""
+currency = "usd"
 
 [messages.transfers]
 # Enable or disable this message type entirely

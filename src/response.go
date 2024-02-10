@@ -48,8 +48,69 @@ type TxResponse struct {
 type CoinGeckoResponse struct {
     MarketData struct {
         CurrentPrice struct {
-            USD float64 `json:"usd"`
-        } `json:"current_price"`
+			Aed  float64 `json:"aed"`
+			Ars  float64 `json:"ars"`
+			Aud  float64 `json:"aud"`
+			Bch  float64 `json:"bch"`
+			Bdt  float64 `json:"bdt"`
+			Bhd  float64 `json:"bhd"`
+			Bmd  float64 `json:"bmd"`
+			Bnb  float64 `json:"bnb"`
+			Brl  float64 `json:"brl"`
+			Btc  float64 `json:"btc"`
+			Cad  float64 `json:"cad"`
+			Chf  float64 `json:"chf"`
+			Clp  float64 `json:"clp"`
+			Cny  float64 `json:"cny"`
+			Czk  float64 `json:"czk"`
+			Dkk  float64 `json:"dkk"`
+			Dot  float64 `json:"dot"`
+			Eos  float64 `json:"eos"`
+			Eth  float64 `json:"eth"`
+			Eur  float64 `json:"eur"`
+			Gbp  float64 `json:"gbp"`
+			Gel  float64 `json:"gel"`
+			Hkd  float64 `json:"hkd"`
+			Huf  float64 `json:"huf"`
+			Idr  float64 `json:"idr"`
+			Ils  float64 `json:"ils"`
+			Inr  float64 `json:"inr"`
+			Jpy  float64 `json:"jpy"`
+			Krw  float64 `json:"krw"`
+			Kwd  float64 `json:"kwd"`
+			Lkr  float64 `json:"lkr"`
+			Ltc  float64 `json:"ltc"`
+			Mmk  float64 `json:"mmk"`
+			Mxn  float64 `json:"mxn"`
+			Myr  float64 `json:"myr"`
+			Ngn  float64 `json:"ngn"`
+			Nok  float64 `json:"nok"`
+			Nzd  float64 `json:"nzd"`
+			Php  float64 `json:"php"`
+			Pkr  float64 `json:"pkr"`
+			Pln  float64 `json:"pln"`
+			Rub  float64 `json:"rub"`
+			Sar  float64 `json:"sar"`
+			Sek  float64 `json:"sek"`
+			Sgd  float64 `json:"sgd"`
+			Thb  float64 `json:"thb"`
+			Try  float64 `json:"try"`
+			Twd  float64 `json:"twd"`
+			Uah  float64 `json:"uah"`
+			Usd  float64 `json:"usd"`
+			Vef  float64 `json:"vef"`
+			Vnd  float64 `json:"vnd"`
+			Xag  float64 `json:"xag"`
+			Xau  float64 `json:"xau"`
+			Xdr  float64 `json:"xdr"`
+			Xlm  float64 `json:"xlm"`
+			Xrp  float64 `json:"xrp"`
+			Yfi  float64 `json:"yfi"`
+			Zar  float64 `json:"zar"`
+			Bits float64 `json:"bits"`
+			Link float64 `json:"link"`
+			Sats float64 `json:"sats"`
+		} `json:"current_price"`
     } `json:"market_data"`
 }
 
@@ -76,7 +137,7 @@ type WebsocketResponse struct {
             TransferSender                 []string `json:"transfer.sender"`
             TransferRecipient              []string `json:"transfer.recipient"`
             IBCTransferSender              []string `json:"ibc_transfer.sender"`
-            IBCTransferRecipient            []string `json:"ibc_transfer.receiver"`
+            IBCTransferRecipient           []string `json:"ibc_transfer.receiver"`
             IBCForeignSender               []string `json:"fungible_token_packet.sender"`
             TransferAmount                 []string `json:"transfer.amount"`
             TxHash                         []string `json:"tx.hash"`

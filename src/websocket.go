@@ -87,6 +87,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                         "\n**Amount:** " +
                         mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
 
+                // FIXME: throws out of index errors
                 } else if ev == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" && config.Messages.Rewards.Enabled {
                      // Withdraw rewards
                      msg.Type = config.Messages.Rewards
