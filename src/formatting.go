@@ -130,7 +130,7 @@ func denomToAmount(msg string) string {
         // Fund
         exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Exponent), 64)
         amount = math.Round((amount/exp)*100)/100
-        return formatter.Sprintf("%.2f %s ($%.2f %s)", amount, config.Coin ,(*config.CurrencyAmount * amount), config.Currency)
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Coin ,(*config.CurrencyAmount * amount), config.Currency)
     case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
         // Osmo
         amount = math.Round((amount/1000000)*100)/100

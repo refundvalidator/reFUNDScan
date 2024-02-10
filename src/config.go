@@ -66,6 +66,8 @@ type MessageConfig struct {
     Enabled        bool     `toml:"enable"`
     Filter         string   `toml:"filter"`
     WhiteBlackList []string `toml:"list"`
+    AmountFilter   bool     `toml:"amount-filter"`
+    Threshold      float64  `toml:"threshold"`
 }
 type MessagesConfig struct {
     Currency        string        `toml:"currency"`
@@ -496,59 +498,94 @@ filter = "default"
 # contain an item defined in the list.
 list = [ "Delegate(rewards)", "Cosmostation" , "100100" ,"und1hdn830wndtquqxzaz3rds7r7hqgpsg5q9ggxpk" ]
 
+# Enable or disable the amount filter, if this is set to true, will filter messages if the total
+# of the transaction falls below the threshold. Threshold should be set to units of the currency amount.
+amount-filter = false
+
+# Only takes affect if amount-filter = true.
+# example: if currency = "usd" and threshold = 100, then any messages totaling below $100
+# will be filtered, and will not send.
+threshold = 1000
+
 [messages.ibc-transfers-in]
 enable = false
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.ibc-transfers-out]
 enable = false
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.withdraw-rewards]
 enable = false
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.withdraw-commission]
 enable = false
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.delegations]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.undelegations]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.redelegations]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.restake]
 enable = false
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 # Starname specific
 [messages.register-account]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.register-domain]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.transfer-account]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.transfer-domain]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 [messages.delete-account]
 enable = true
 filter = "default"
 list = []
+amount-filter = false
+threshold = 1000
 
 [address]
 # Optionally define a list of wallets to be named when their account/val addresses
