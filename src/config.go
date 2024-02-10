@@ -98,7 +98,8 @@ type Config struct {
     Coin            string
     Denom           string
     CoinGeckoID     string
-    Currency        float64
+    Currency        string
+    CurrencyAmount  *float64
     Bech32Prefix    string
     Exponent        int
 
@@ -274,19 +275,18 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.ExplorerAccount = base + "/account/"
         cfg.ExplorerValidator = base + "/staking/"
     }
-    r := reflect.ValueOf(cg.MarketData.CurrentPrice)
+    r := reflect.ValueOf(&cg.MarketData.CurrentPrice).Elem()
     success := false
     for i := 0; i < r.NumField(); i++ {
-        // fmt.Println(strings.ToLower(r.Type().Field(i).Name))
         if strings.ToLower(configfile.Messages.Currency) == strings.ToLower(r.Type().Field(i).Name) {
-            cfg.Currency = r.Field(i).Interface().(float64)
+            cfg.Currency = strings.ToUpper(r.Type().Field(i).Name)
+            cfg.CurrencyAmount = r.Field(i).Addr().Interface().(*float64)
             success = true
         }
     }
     if !success {
-        log.Fatal("Invalid Currency Type")
+        log.Fatal(color.RedString("Invalid Currency Type, Check your config"))
     }
-    
     cfg.validateConfig()
 }
 func (cfg *Config) validateConfig(){
@@ -476,7 +476,7 @@ websocket = "wss://rpc1.unification.io/websocket"
 [messages]
 
 # Currency to display for the messages.
-# example: ""
+# example: "usd" or "cad" or "eur"
 currency = "usd"
 
 [messages.transfers]
