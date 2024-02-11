@@ -276,7 +276,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                 }
                 // Ensure the msg is not blank
                 if msg.Message == "" || reflect.DeepEqual(msg.Type, MessageConfig{}) {
-                    break
+                    continue
                 }
                 // Add the memo if it exists
                 if memo := getMemo(events.TxHash[0]); memo != "" {
