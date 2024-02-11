@@ -85,8 +85,8 @@ func getIBC(amount float64, denom string) (float64,string, error) {
     var ibc IBCResponse
     url := config.RestURL + "/ibc/apps/transfer/v1/denom_traces/" + denom
     getData(url, &ibc)
-    for _, ass := range(config.IBCAssets) {
-        if len(ass.Assets) > 0 && len(assets.Assets[0].DenomUnits) > 1 {
+    for _, ass := range(config.ChainData.Assets) {
+        if len(ass.Assets) > 0 && len(ass.Assets[0].DenomUnits) > 1 {
             if ass.Assets[0].DenomUnits[0].Denom == ibc.DenomTrace.BaseDenom {
                 denom = ass.Assets[0].DenomUnits[1].Denom
                 exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",ass.Assets[0].DenomUnits[1].Exponent), 64)

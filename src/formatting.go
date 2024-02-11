@@ -16,25 +16,17 @@ import (
 )
 
 
-// TODO:
-// Remove the need for these pre-defined URLs for universal links
-var (
-    osmoExplorerAccount = "https://www.mintscan.io/osmosis/address/"
-    gravExplorerAccount = "https://www.mintscan.io/gravity-bridge/address/"
-)
-
 // Returns and MD formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
-    switch addr[:len(config.Bech32Prefix + "val")]{
-    case config.Bech32Prefix + "val":
+    if addr[:len(config.Bech32Prefix + "val")] == config.Bech32Prefix + "val"{
         return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerValidator,addr)
-    }
-    switch addr[:3]{
-    case "osm":
-        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),osmoExplorerAccount,addr)
-    case "gra":
-        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),gravExplorerAccount,addr)
-    default:
+    } else {
+        for _, chain := range(config.ChainData.Chains) {
+            if chain.Bech32Prefix == addr[:len(chain.Bech32Prefix)] {
+               url := config.ExplorerBase + chain.PrettyName + "/account/" + addr
+               return fmt.Sprintf("[%s](%s)",getAccountName(addr),url)
+            }
+        }
         return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerAccount,addr)
     }
 }
@@ -106,9 +98,6 @@ func getAccountName(msg string) string {
     return fmt.Sprintf("%s...%s",msg[:7],msg[len(msg)-7:])
 }
 
-// TODO: Split up this functinon, and create a config file entry 
-// to set custom IBC's
-// Also, setup predefined IBC's using the chains' assetlist
 func denomTotaler() func(string) string{
     var total float64
     return func(msg string) string {
@@ -120,6 +109,7 @@ func denomTotaler() func(string) string{
 
 // Converts the denom to the formatted amount
 // E.G. 1000000000nund becomes 1.00 FUND
+// TODO Find a way to add currency amounts to IBC's, without overloading the CoinGecko API
 func denomToAmount(msg string) string {
     amount, denom := splitAmountDenom(msg)
     // This will format the numbers in human readable form E.G.

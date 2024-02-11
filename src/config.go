@@ -86,9 +86,25 @@ type MessagesConfig struct {
     TransferDomain  MessageConfig `toml:"transfer-domain"`
     DeleteAccount   MessageConfig `toml:"delete-account"`
 }
+//TODO Use me!!
+type ChainConfig struct {
+   DisplayName       string 
+   Denom             string
+   Exponent          int 
+   Prefix            string
+   ExplorerPath      string
+}
 
 
+//TODO Simplify this
 type Config struct {
+    // ClientConfig        ClientConfig
+    // ChainConfig         ChainConfig
+    // ConnectionsConfig   ConnectionConfig 
+    // MessageConfig       MessageConfig
+    // IBCConfigs          []ChainConfig
+    // NamedAddressConfigs []NamedAddressConfig
+
     Clients         []string
     TgAPI           string
     DscAPI          string
@@ -113,12 +129,16 @@ type Config struct {
 
     Named           []AddressConfig
 
-    IBCAssets       []AssetsResponse
+    ChainData struct{
+        Assets      []AssetsResponse
+        Chains      []ChainResponse
+    }
 
     RestTx          string
     RestValidators  string
     RestCoinGecko   string
 
+    ExplorerBase       string
     ExplorerTx         string
     ExplorerAccount    string
     ExplorerValidator  string
@@ -223,8 +243,7 @@ func (cfg *Config) parseConfig(filePath string) {
         log.Fatal(color.RedString("No client selected, check your config."))
     }
 
-
-
+    // TODO: Deprecate this, and only use ping.pub
     switch configfile.Explorer.Preset {
     case "custom":
         cfg.ExplorerTx = configfile.Explorer.Tx
@@ -232,6 +251,7 @@ func (cfg *Config) parseConfig(filePath string) {
         cfg.ExplorerValidator = configfile.Explorer.Validator
     case "ping":
         var base string
+        cfg.ExplorerBase = "https://ping.pub/"
         if configfile.Explorer.AutoPath {
             base = "https://ping.pub/" + cfg.ChainPrettyName
         } else {
@@ -388,23 +408,49 @@ func (cfg *Config) validateConfig(){
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
 
-    log.Println(color.BlueString("Querying other chains configurations..."))
+    log.Println(color.BlueString("Querying Asset and Chain data for other available chains..."))
     var git GitHubResponse
     err := getData("https://raw.githubusercontent.com/refundvalidator/chain-registry/master/mainnets.json", &git)
     if err != nil {
         logMsg := fmt.Sprintf("Failed to get other chain data from github, other chains' currency will appear as Unknown IBC: " + err.Error())
         log.Println(color.YellowString(logMsg))
     }
+    log.Println(color.GreenString(fmt.Sprintf("%d Chains Available, Querying their configurations...", len(git.Chains))))
+    available_assets := 0
+    available_chains := 0
     for _, c := range git.Chains {
         var ass AssetsResponse
+        var chain ChainResponse
         err := getData(
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", c),
+            &chain)
+        if err != nil {
+            logMsg := fmt.Sprintf("Failed to get Chain info for %s, this chain's generated links will not direct properly: %s", c, err.Error())
+            log.Println(color.YellowString(logMsg))
+        } else {
+            cfg.ChainData.Chains = append(cfg.ChainData.Chains, chain) 
+            available_chains += 1
+        }
+        err = getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", c),
             &ass)
         if err != nil {
             logMsg := fmt.Sprintf("Failed to get Asset info for %s, this chain's currency will appear as Unknown IBC: %s", c, err.Error())
             log.Println(color.YellowString(logMsg))
+        } else {
+            cfg.ChainData.Assets = append(cfg.ChainData.Assets, ass)
+            available_assets += 1
         }
-        cfg.IBCAssets = append(cfg.IBCAssets, ass)
+    }
+    if available_assets > 0 {
+        log.Println(color.GreenString(fmt.Sprintf("%d Assets Succesfully Queried!", available_assets)))
+    } else {
+        log.Println(color.YellowString(fmt.Sprintf("No chains could be queried, other chains' currency will appear as Unknown IBC")))
+    }
+    if available_chains > 0 {
+        log.Println(color.GreenString(fmt.Sprintf("%d Chains Succesfully Queried!", available_chains)))
+    } else {
+        log.Println(color.YellowString(fmt.Sprintf("No chains could be queried, other chains' links will not work properly")))
     }
 
     //Format the information
