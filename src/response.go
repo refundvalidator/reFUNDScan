@@ -33,6 +33,14 @@ type ChainResponse struct {
         } `json:"rest"`
     } `json:"apis"`
 }
+type GitHubResponse struct {
+    Chains []string `json:"mainnets"`
+}
+type IBCResponse struct {
+    DenomTrace struct {
+       BaseDenom string `json:"base_denom"` 
+    } `json:"denom_trace"`
+}
 type ICNSResponse struct {
     Data struct {
         PrimaryName string `json:"primary_name"`

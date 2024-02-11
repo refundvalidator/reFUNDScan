@@ -125,21 +125,17 @@ func denomToAmount(msg string) string {
     // This will format the numbers in human readable form E.G.
     // 1000 FUND should become 1,000 FUND
     formatter := message.NewPrinter(language.English)
-    switch denom {
-    case config.Denom:
-        // Fund
+    if denom == config.Denom {
         exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Exponent), 64)
         amount = math.Round((amount/exp)*100)/100
         return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Coin ,(*config.CurrencyAmount * amount), config.Currency)
-    case "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
-        // Osmo
-        amount = math.Round((amount/1000000)*100)/100
-        return formatter.Sprintf("%.2f OSMO", amount)
-    case "ibc/C950356239AD2A205DE09FDF066B1F9FF19A7CA7145EA48A5B19B76EE47E52F7":
-        // Grav
-        amount = math.Round((amount/1000000)*100)/100
-        return formatter.Sprintf("%.2f GRAV", amount)
-    default:
+    } else if denom[:4] == "ibc/" {
+       amount, denom, err := getIBC(amount ,denom[4:]) 
+        if err != nil {
+            return "Unknown IBC"
+        }
+       return formatter.Sprintf("%.2f %s", amount, denom)
+    } else {
         return "Unknown IBC"
     }
 }

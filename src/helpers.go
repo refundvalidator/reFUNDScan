@@ -6,6 +6,7 @@ import (
 	"strings"
     "fmt"
     "math"
+    "errors"
 
 	"github.com/fatih/color"
 )
@@ -21,6 +22,9 @@ func splitAmountDenom(amount string) (float64, string){
         } else {
             break
         }           
+    }
+    if amount == "" {
+        return 0, "UnknownDenom"
     }
     denom := amount[index+1:]
     floatAmnt, _ := strconv.ParseFloat(amnt, 64)
@@ -76,4 +80,20 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
         return true
     }
     return true
+}
+func getIBC(amount float64, denom string) (float64,string, error) {
+    var ibc IBCResponse
+    url := config.RestURL + "/ibc/apps/transfer/v1/denom_traces/" + denom
+    getData(url, &ibc)
+    for _, ass := range(config.IBCAssets) {
+        if len(ass.Assets) > 0 && len(assets.Assets[0].DenomUnits) > 1 {
+            if ass.Assets[0].DenomUnits[0].Denom == ibc.DenomTrace.BaseDenom {
+                denom = ass.Assets[0].DenomUnits[1].Denom
+                exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",ass.Assets[0].DenomUnits[1].Exponent), 64)
+                amount = math.Round((amount/exp)*100)/100
+                return amount, strings.ToUpper(denom), nil
+            }
+        }
+    }
+    return 0, "", errors.New("Data not available")
 }

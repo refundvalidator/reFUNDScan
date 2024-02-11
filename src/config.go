@@ -113,6 +113,8 @@ type Config struct {
 
     Named           []AddressConfig
 
+    IBCAssets       []AssetsResponse
+
     RestTx          string
     RestValidators  string
     RestCoinGecko   string
@@ -220,6 +222,8 @@ func (cfg *Config) parseConfig(filePath string) {
     if len(cfg.Clients) == 0 {
         log.Fatal(color.RedString("No client selected, check your config."))
     }
+
+
 
     switch configfile.Explorer.Preset {
     case "custom":
@@ -383,6 +387,26 @@ func (cfg *Config) validateConfig(){
         log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.WebsocketURL))
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
+
+    log.Println(color.BlueString("Querying other chains configurations..."))
+    var git GitHubResponse
+    err := getData("https://raw.githubusercontent.com/refundvalidator/chain-registry/master/mainnets.json", &git)
+    if err != nil {
+        logMsg := fmt.Sprintf("Failed to get other chain data from github, other chains' currency will appear as Unknown IBC: " + err.Error())
+        log.Println(color.YellowString(logMsg))
+    }
+    for _, c := range git.Chains {
+        var ass AssetsResponse
+        err := getData(
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", c),
+            &ass)
+        if err != nil {
+            logMsg := fmt.Sprintf("Failed to get Asset info for %s, this chain's currency will appear as Unknown IBC: %s", c, err.Error())
+            log.Println(color.YellowString(logMsg))
+        }
+        cfg.IBCAssets = append(cfg.IBCAssets, ass)
+    }
+
     //Format the information
     cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
     cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
