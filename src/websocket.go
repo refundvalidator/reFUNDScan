@@ -121,7 +121,7 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                      msg.TypeName = "Commission"
                      msg.Message +=
                          "\n** 💸 Withdraw Commission 💸 **" +
-                         "\n**Validator:** " +
+                         "\n\n**Validator:** " +
                          mkAccountLink(events.WithdrawRewardsDelegator[0]) +
                          "\n**Amount:** " +
                          mkTranscationLink(events.TxHash[0],events.WithdrawCommissionAmount[0])
@@ -289,6 +289,9 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                     break 
                 }
                 resp <- msg
+                if msg.TypeName == "Rewards" {
+                   continue 
+                }
                 break
             }
         }
