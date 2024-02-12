@@ -19,6 +19,8 @@ type AssetsResponse struct {
         } `json:"denom_units"`
         CoingeckoID string `json:"coingecko_id"`
         Coin        string `json:"symbol"`
+        Display     string `json:"display"`
+        Denom       string `json:"base"`
     } `json:"assets"`
 }
 type ChainResponse struct {
@@ -32,6 +34,14 @@ type ChainResponse struct {
             Address string `json:"address"`
         } `json:"rest"`
     } `json:"apis"`
+}
+type GitHubResponse struct {
+    Chains []string `json:"mainnets"`
+}
+type IBCResponse struct {
+    DenomTrace struct {
+        BaseDenom string `json:"base_denom"` 
+    } `json:"denom_trace"`
 }
 type ICNSResponse struct {
     Data struct {

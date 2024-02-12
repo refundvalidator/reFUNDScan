@@ -17,46 +17,44 @@ import (
 
 // Config struct to represent the structure of the TOML file
 type ConfigFile struct {
-    Clients struct{
-        Clients    []string `toml:"clients"`
-        TgAPI      string   `toml:"telegram-api"`
-        TgChatIDs  []string `toml:"telegram-chat-ids"`
-        DscAPI     string   `toml:"discord-api"`
-        DscChatIDs []string `toml:"discord-chat-ids"`
-    }`toml:"clients"`
-    Chain struct {
-        Name string
-    }`toml:"chain"`
-    ChainInfo struct {
-        Default      bool   `toml:"default"`
-        PrettyName   string `toml:"pretty-name"`
-        Coin         string `toml:"coin"`
-        Denom        string `toml:"denom"`
-        Exponent     int    `toml:"exponent"`
-        CoinGeckoID  string `toml:"coin-gecko-id"`
-        Bech32Prefix string `toml:"bech32-prefix"`
-    }`toml:"chaininfo"`
-    Connections struct {
-        Default    bool `toml:"default"`
-        Rest       string `toml:"rest"`
-        Websocket  string `toml:"websocket"`
-    }`toml:"connections"`
-    ICNS struct{
-        Default bool `toml:"default"`
-        Rest string `toml:"rest"`
-    }`toml:"icns"`
-    Address struct {
-        Addresses []AddressConfig `toml:"named"` 
-    } `toml:"address"`
-    Messages MessagesConfig `toml:"messages"`
-    Explorer struct {
-        Preset    string `toml:"explorer-preset"`
-        Tx        string `toml:"explorer-custom-tx"`
-        Account   string `toml:"explorer-custom-account"`
-        Validator string `toml:"explorer-custom-validator"`
-        AutoPath  bool   `toml:"auto-path"`
-        Path      string `toml:"path"`
-    } `toml:"explorer"`
+    ClientsConfig     ClientsConfig `toml:"clients"`
+    ChainConfig       ChainConfig `toml:"chain"`
+    ChainInfoConfig   ChainInfoConfig `toml:"chaininfo"`
+    ConnectionsConfig ConnectionsConfig `toml:"connections"`
+    ICNSConfig        ICNSConfig `toml:"icns"` 
+    AddressesConfig   AddressesConfig `toml:"address"`
+    MessagesConfig    MessagesConfig `toml:"messages"`
+}
+type ClientsConfig struct{
+    Clients    []string `toml:"clients"`
+    TgAPI      string   `toml:"telegram-api"`
+    TgChatIDs  []string `toml:"telegram-chat-ids"`
+    DscAPI     string   `toml:"discord-api"`
+    DscChatIDs []string `toml:"discord-chat-ids"`
+}
+type ChainConfig struct {
+    Name string
+}
+type ChainInfoConfig struct {
+    Default      bool   `toml:"default"`
+    PrettyName   string `toml:"pretty-name"`
+    Coin         string `toml:"coin"`
+    Denom        string `toml:"denom"`
+    Exponent     int    `toml:"exponent"`
+    CoinGeckoID  string `toml:"coin-gecko-id"`
+    Bech32Prefix string `toml:"bech32-prefix"`
+}
+type ConnectionsConfig struct {
+    Default    bool `toml:"default"`
+    Rest       string `toml:"rest"`
+    Websocket  string `toml:"websocket"`
+}
+type ICNSConfig struct{
+    Default bool `toml:"default"`
+    Rest string `toml:"rest"`
+}
+type AddressesConfig struct {
+    Addresses []AddressConfig `toml:"named"`
 }
 type AddressConfig struct {
     Name string `toml:"name"` 
@@ -87,41 +85,36 @@ type MessagesConfig struct {
     DeleteAccount   MessageConfig `toml:"delete-account"`
 }
 
+type ChainData struct {
+    DisplayName       string 
+    Denom             string
+    Exponent          int 
+    Prefix            string
+    ExplorerPath      string
+    CoinGeckoID       string
+}
+type ConnectionData struct {
+    Rest            string
+    Websocket       string
+    ICNS            string
+}
+type ExplorerData struct {
+    Base            string
+    Account         string
+    Validator       string
+    TX              string
+}
 
+// Runtime Config
 type Config struct {
-    Clients         []string
-    TgAPI           string
-    DscAPI          string
-    TgChatIDs       []string
-    DscChatIDs      []string
+    Config          ConfigFile
 
-    Chain           string
-    ChainPrettyName string
-    Coin            string
-    Denom           string
-    CoinGeckoID     string
+    Chain           ChainData
+    Connections     ConnectionData
+    Explorer        ExplorerData
+    OtherChains     []ChainData
     Currency        string
     CurrencyAmount  *float64
-    Bech32Prefix    string
-    Exponent        int
-
-    RestURL         string
-    WebsocketURL    string
-    ICNSUrl         string
-
-    Messages        MessagesConfig 
-
-    Named           []AddressConfig
-
-    RestTx          string
-    RestValidators  string
-    RestCoinGecko   string
-
-    ExplorerTx         string
-    ExplorerAccount    string
-    ExplorerValidator  string
-
-    ICNSAccount     string
 }
 
 var (
@@ -129,27 +122,23 @@ var (
     chain      ChainResponse
     icns       ChainResponse
     assets     AssetsResponse
+    git        GitHubResponse
 )
 
 func (cfg *Config) parseConfig(filePath string) {
     if strings.HasSuffix(filePath, "config.toml") {
         filePath = strings.TrimSuffix(filePath, "config.toml")
     }
-    filePath = strings.TrimRight(filePath,"/")
-    if _, err := toml.DecodeFile(filePath + "/config.toml", &configfile); err != nil {
+    ensureTrailingSlash(&filePath)
+    if _, err := toml.DecodeFile(filePath + "config.toml", &configfile); err != nil {
         log.Fatal(color.RedString("Error parsing config.toml file, verify your configuation:", err))
     }
-    cfg.Clients = configfile.Clients.Clients
-    cfg.TgAPI = configfile.Clients.TgAPI
-    cfg.TgChatIDs = configfile.Clients.TgChatIDs
-    cfg.DscAPI = configfile.Clients.DscAPI
-    cfg.DscChatIDs = configfile.Clients.DscChatIDs
-    cfg.Chain = configfile.Chain.Name
-    cfg.Messages = configfile.Messages
-    cfg.Named = configfile.Address.Addresses
+
+    cfg.Config = configfile
+
 
     // Grab the first available Rest URL for ICNS from the chain registry, if default = true
-    if configfile.ICNS.Default == true {
+    if cfg.Config.ICNSConfig.Default == true {
         err := getData(
             "https://raw.githubusercontent.com/cosmos/chain-registry/master/osmosis/chain.json",
             &icns)
@@ -159,15 +148,15 @@ func (cfg *Config) parseConfig(filePath string) {
         if len(icns.Apis.Rest) == 0 {
             log.Fatal(color.RedString("Failed to get any ICNS Urls from the osmosis chain registry, Please enter an ICNS URL manually"))
         } 
-        cfg.ICNSUrl = icns.Apis.Rest[0].Address
+        cfg.Connections.ICNS = icns.Apis.Rest[0].Address
     } else {
-        cfg.ICNSUrl = configfile.ICNS.Rest
-    }
+        cfg.Connections.ICNS = configfile.ICNSConfig.Rest
+    } 
 
     // Grab the first available Rest and RPC/Websocket URL from the chain registry, if default = true
-    if configfile.Connections.Default == true {
+    if cfg.Config.ConnectionsConfig.Default == true {
         err := getData(
-            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", configfile.ChainConfig.Name),
             &chain)
         if err != nil {
             log.Fatal(color.RedString("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
@@ -182,123 +171,144 @@ func (cfg *Config) parseConfig(filePath string) {
         if len(chain.Apis.Rest) == 0 {
             log.Fatal(color.RedString("Failed to retrieve any Rest urls from the chain registry, please enter a Rest URL manually"))
         }
-        cfg.RestURL = chain.Apis.Rest[0].Address
-        cfg.WebsocketURL = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
+        cfg.Connections.Rest = chain.Apis.Rest[0].Address
+        cfg.Connections.Websocket = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
     } else {
-        cfg.RestURL = configfile.Connections.Rest
-        cfg.WebsocketURL = configfile.Connections.Websocket
+        cfg.Connections.Rest = configfile.ConnectionsConfig.Rest
+        cfg.Connections.Websocket = configfile.ConnectionsConfig.Websocket
     }
 
     // Grab the chain info from the registry, if default = true
-    if configfile.ChainInfo.Default == true {
+    if cfg.Config.ChainInfoConfig.Default == true {
         err := getData(
-            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", config.Chain),
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", configfile.ChainConfig.Name),
             &assets)
         if err != nil {
             log.Fatal(color.RedString("Failed to get the assetslist.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
         err = getData(
-            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", config.Chain),
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", configfile.ChainConfig.Name),
             &chain)
         if err != nil {
             log.Fatal(color.RedString("Failed to get the chain.json from the chain registry, verify your chains' name matches the entry from the chain registry"))
         }
-        cfg.ChainPrettyName = chain.PrettyName
-        cfg.Bech32Prefix = chain.Bech32Prefix
-        cfg.Denom = assets.Assets[0].DenomUnits[0].Denom
-        cfg.Coin = assets.Assets[0].Coin
-        cfg.Exponent = assets.Assets[0].DenomUnits[1].Exponent
-        cfg.CoinGeckoID = assets.Assets[0].CoingeckoID
+        cfg.Chain = ChainData {
+            DisplayName: assets.Assets[0].Display, 
+            Denom: assets.Assets[0].DenomUnits[0].Denom,
+            Exponent: assets.Assets[0].DenomUnits[1].Exponent,
+            Prefix: chain.Bech32Prefix,
+            ExplorerPath: chain.PrettyName,
+            CoinGeckoID: assets.Assets[0].CoingeckoID,
+        }
     } else {
-        cfg.ChainPrettyName = configfile.ChainInfo.PrettyName
-        cfg.Bech32Prefix = configfile.ChainInfo.Bech32Prefix
-        cfg.Denom = configfile.ChainInfo.Denom
-        cfg.Coin = configfile.ChainInfo.Coin
-        cfg.Exponent = configfile.ChainInfo.Exponent
-        cfg.CoinGeckoID = configfile.ChainInfo.CoinGeckoID
+        cfg.Chain = ChainData {
+            DisplayName: configfile.ChainInfoConfig.Coin, 
+            Denom: configfile.ChainInfoConfig.Denom,
+            Exponent: configfile.ChainInfoConfig.Exponent,
+            Prefix: configfile.ChainInfoConfig.Bech32Prefix,
+            ExplorerPath: configfile.ChainInfoConfig.PrettyName,
+            CoinGeckoID: configfile.ChainInfoConfig.CoinGeckoID,
+        }
     }
-    if len(cfg.Clients) == 0 {
-        log.Fatal(color.RedString("No client selected, check your config."))
-    }
-
-    switch configfile.Explorer.Preset {
-    case "custom":
-        cfg.ExplorerTx = configfile.Explorer.Tx
-        cfg.ExplorerAccount = configfile.Explorer.Account
-        cfg.ExplorerValidator = configfile.Explorer.Validator
-    case "ping":
-        var base string
-        if configfile.Explorer.AutoPath {
-            base = "https://ping.pub/" + cfg.ChainPrettyName
-        } else {
-            base = "https://ping.pub/" + configfile.Explorer.Path
-        }
-        cfg.ExplorerTx = base + "/tx/"
-        cfg.ExplorerAccount = base + "/account/"
-        cfg.ExplorerValidator = base + "/staking/"
-    case "atom":
-        var base string
-        if configfile.Explorer.AutoPath {
-            base = "https://atomscan.com/" + cfg.ChainPrettyName
-        } else {
-            base = "https://atomscan.com/" + configfile.Explorer.Path
-        }
-        cfg.ExplorerTx = base + "/transactions/"
-        cfg.ExplorerAccount = base + "/accounts/"
-        cfg.ExplorerValidator = base + "/validators/"
-    case "mint":
-        var base string
-        if configfile.Explorer.AutoPath {
-            base = "https://mintscan.io/" + cfg.ChainPrettyName
-        } else {
-            base = "https://mintscan.io/" + configfile.Explorer.Path
-        }
-        cfg.ExplorerTx = base + "/tx/"
-        cfg.ExplorerAccount = base + "/address/"
-        cfg.ExplorerValidator = base + "/validators/"
-    case "dipper":
-        var base string
-        if configfile.Explorer.AutoPath {
-            base = "https://bigdipper.live/" + cfg.ChainPrettyName
-        } else {
-            base = "https://bigdipper.live/" + configfile.Explorer.Path
-        }
-        cfg.ExplorerTx = base + "/transactions/"
-        cfg.ExplorerAccount = base + "/accounts/"
-        cfg.ExplorerValidator = base + "/validators/"
-    default:
-        var base string
-        if configfile.Explorer.AutoPath {
-            base = "https://ping.pub/" + cfg.ChainPrettyName
-        } else {
-            base = "https://ping.pub/" + configfile.Explorer.Path
-        }
-        cfg.ExplorerTx = base + "/tx/"
-        cfg.ExplorerAccount = base + "/account/"
-        cfg.ExplorerValidator = base + "/staking/"
-    }
+    // Set the currency type
     r := reflect.ValueOf(&cg.MarketData.CurrentPrice).Elem()
-    success := false
     for i := 0; i < r.NumField(); i++ {
-        if strings.ToLower(configfile.Messages.Currency) == strings.ToLower(r.Type().Field(i).Name) {
+        if strings.ToLower(configfile.MessagesConfig.Currency) == strings.ToLower(r.Type().Field(i).Name) {
             cfg.Currency = strings.ToUpper(r.Type().Field(i).Name)
             cfg.CurrencyAmount = r.Field(i).Addr().Interface().(*float64)
-            success = true
         }
     }
-    if !success {
-        log.Fatal(color.RedString("Invalid Currency Type, Check your config"))
+    // Grab OtherChains Configurations
+    log.Println(color.BlueString("Querying Asset and Chain data for other available chains..."))
+    err := getData("https://raw.githubusercontent.com/refundvalidator/chain-registry/master/mainnets.json", &git)
+    if err != nil {
+        logMsg := fmt.Sprintf("Failed to get other chain data from github, other chains' currency will appear as Unknown IBC: " + err.Error())
+        log.Println(color.YellowString(logMsg))
+    }
+    log.Println(color.GreenString(fmt.Sprintf("%d Chains Available, Querying their configurations...", len(git.Chains))))
+    available := 0
+    for _, c := range git.Chains {
+        var ass AssetsResponse
+        var chain ChainResponse
+        var data ChainData
+        err := getData(
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", c),
+            &chain)
+        if err != nil {
+            log.Println(color.YellowString("Failed to get Chain Data for: " + c))
+            continue
+        } else {
+            // Fixes for specific chains, that don't adhear their paths to the chain registry
+            if chain.PrettyName == "Cosmos Hub" {
+                data.ExplorerPath = "Cosmos" 
+            } else {
+                data.ExplorerPath = strings.ReplaceAll(chain.PrettyName," ","-")
+            }
+            data.DisplayName = chain.PrettyName
+            data.Prefix = chain.Bech32Prefix
+        }
+        err = getData(
+            fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", c),
+            &ass)
+        if err != nil {
+            log.Println(color.YellowString("Failed to get Asset Data for: " + c))
+            continue
+        } else {
+            // Verify we can grab the correct DisplayName, Exponent, and Denom from the list
+            for _, denom := range(ass.Assets[0].DenomUnits) {
+                switch strings.ToUpper(denom.Denom){
+                case strings.ToUpper(ass.Assets[0].Display):
+                    data.DisplayName = strings.ToUpper(denom.Denom)
+                    data.Exponent = denom.Exponent
+                case strings.ToUpper(ass.Assets[0].Denom):
+                    data.Denom = strings.ToLower(ass.Assets[0].Denom)
+                }
+            }
+            if data.DisplayName == "" || data.Exponent == 0 || data.Denom == "" {
+                continue 
+            }
+        }
+        cfg.OtherChains = append(cfg.OtherChains, data)
+        available += 1
+    }
+    if available > 0 {
+        log.Println(color.GreenString(fmt.Sprintf("%d Chains Succesfully Queried!", available)))
+    } else {
+        log.Println(color.YellowString(fmt.Sprintf("No chains could be queried")))
     }
     cfg.validateConfig()
 }
 func (cfg *Config) validateConfig(){
     log.Println(color.BlueString("Validating Config..."))
+    // Confirm there is no empty data for these fields
+    if len(cfg.Config.ClientsConfig.Clients) == 0 {
+        log.Fatal(color.RedString("No client selected, check your config."))
+    }
+    if cfg.Currency == "" {
+        log.Fatal(color.RedString("Invalid Currency Type, Check your config"))
+    }
+    // Format information
+    cfg.Chain.DisplayName = strings.ToUpper(cfg.Chain.DisplayName)
+    cfg.Chain.Denom = strings.ToLower(cfg.Chain.Denom)
+    cfg.Chain.Prefix = strings.ToLower(cfg.Chain.Prefix)
+    ensureTrailingSlash(&cfg.Connections.Rest)
+    ensureTrailingSlash(&cfg.Connections.Websocket)
+    ensureTrailingSlash(&cfg.Connections.ICNS)
+    ensureNoSpaces(&cfg.Chain.ExplorerPath)
+    // Set URL Pathings
+    cfg.Explorer.Base = "https://ping.pub/"
+    cfg.Explorer.Account = cfg.Explorer.Base + cfg.Chain.ExplorerPath + "/account/"
+    cfg.Explorer.Validator = cfg.Explorer.Base + cfg.Chain.ExplorerPath + "/staking/"
+    cfg.Explorer.TX = cfg.Explorer.Base + cfg.Chain.ExplorerPath + "/tx/"
+
+    // Begin Testing URL connections
     log.Println(color.BlueString("Testing ICNS URL..."))
     client := &http.Client{Timeout: 10 * time.Second}
 
-    if response, err := client.Head(cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/");
+    // Verify ICNS connection can be made, otherwise try the next URL in the config if default = true
+    if response, err := client.Head(cfg.Connections.ICNS + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/");
     err != nil || response.StatusCode != http.StatusNotImplemented {
-        if configfile.ICNS.Default != true {
+        if configfile.ICNSConfig.Default != true {
             log.Fatal(color.RedString("Bad ICNS URL, Please verify your config"))
         }
         success := false
@@ -306,10 +316,10 @@ func (cfg *Config) validateConfig(){
             if i == 0 {
                 continue
             }
-            cfg.RestURL = strings.TrimRight(u.Address, "/")
+            cfg.Connections.ICNS = strings.TrimRight(u.Address, "/")
             log.Println(color.YellowString("Bad ICNS URL, trying the next one in the registry..."))
-            log.Println(color.BlueString("Testing ICNS URL: " + cfg.ICNSUrl))
-            if response, err := client.Head(cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"); err == nil && response.StatusCode == http.StatusNotImplemented {
+            log.Println(color.BlueString("Testing ICNS URL: " + cfg.Connections.ICNS))
+            if response, err := client.Head(cfg.Connections.ICNS + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"); err == nil && response.StatusCode == http.StatusNotImplemented {
                 success = true
                 break
             }
@@ -317,16 +327,17 @@ func (cfg *Config) validateConfig(){
         if success != true {
             log.Fatal(color.RedString("Could not find valid ICNS URL in the chain registry, please provide your own"))
         }
-        log.Println(color.GreenString("Using ICNS URL: " + cfg.ICNSUrl))
-        log.Println(color.GreenString("Rest ICNS Valid\n"))
-
+        log.Println(color.GreenString("Using ICNS URL: " + cfg.Connections.ICNS))
+        log.Println(color.GreenString("ICNS URL Valid\n"))
     } else {
-        log.Println(color.GreenString("Using ICNS URL: " + cfg.ICNSUrl))
+        log.Println(color.GreenString("Using ICNS URL: " + cfg.Connections.ICNS))
         log.Println(color.GreenString("ICNS URL Valid\n"))
     }
-    log.Println(color.BlueString("Testing Rest URL: " + cfg.RestURL))
-    if response, err := client.Head(cfg.RestURL + "/cosmos/tx/v1beta1/txs"); err != nil || response.StatusCode != http.StatusNotImplemented {
-        if configfile.Connections.Default != true {
+
+    // Verify REST connection can be made, otherwise try the next URL in the config if default = true
+    log.Println(color.BlueString("Testing Rest URL: " + cfg.Connections.Rest))
+    if response, err := client.Head(cfg.Connections.Rest + "/cosmos/tx/v1beta1/txs"); err != nil || response.StatusCode != http.StatusNotImplemented {
+        if configfile.ConnectionsConfig.Default != true {
             log.Fatal(color.RedString("Bad Rest URL, Please verify your config"))
         }
         success := false
@@ -334,10 +345,10 @@ func (cfg *Config) validateConfig(){
             if i == 0 {
                 continue
             }
-            cfg.RestURL = strings.TrimRight(u.Address, "/")
+            cfg.Connections.Rest = strings.TrimRight(u.Address, "/")
             log.Println(color.YellowString("Bad Rest URL, trying the next one in the registry..."))
-            log.Println(color.BlueString("Testing Rest URL: " + cfg.RestURL))
-            if response, err := client.Head(cfg.RestURL + "/cosmos/tx/v1beta1/txs"); err == nil && response.StatusCode == http.StatusNotImplemented {
+            log.Println(color.BlueString("Testing Rest URL: " + cfg.Connections.Rest))
+            if response, err := client.Head(cfg.Connections.Rest + "/cosmos/tx/v1beta1/txs"); err == nil && response.StatusCode == http.StatusNotImplemented {
                 success = true
                 break
             }
@@ -345,15 +356,17 @@ func (cfg *Config) validateConfig(){
         if success != true {
             log.Fatal(color.RedString("Could not find valid Rest URL in the chain registry, please provide your own"))
         }
-        log.Println(color.GreenString("Using Rest URL: " + cfg.RestURL))
+        log.Println(color.GreenString("Using Rest URL: " + cfg.Connections.Rest))
         log.Println(color.GreenString("Rest URL Valid\n"))
     } else {
-        log.Println(color.GreenString("Using Rest URL: " + cfg.RestURL))
+        log.Println(color.GreenString("Using Rest URL: " + cfg.Connections.Rest))
         log.Println(color.GreenString("Rest URL Valid\n"))
     }
-    log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.WebsocketURL))
-    if _, _, err := websocket.DefaultDialer.Dial(cfg.WebsocketURL, nil); err != nil {
-        if configfile.Connections.Default != true {
+
+    // Verify Websocket connection can be made, otherwise try the next URL in the config if default = true
+    log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.Connections.Websocket))
+    if _, _, err := websocket.DefaultDialer.Dial(cfg.Connections.Websocket, nil); err != nil {
+        if configfile.ConnectionsConfig.Default != true {
             log.Fatal(color.RedString("Bad RPC/Websocket URL, Please verify your config"))
         }
         success := false
@@ -366,10 +379,10 @@ func (cfg *Config) validateConfig(){
                 log.Println(color.YellowString("Failed to Parse"))
                 continue
             }
-            cfg.WebsocketURL = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
+            cfg.Connections.Websocket = fmt.Sprintf("wss://%s/websocket",parsedRPC.Host)
             log.Println(color.YellowString("Bad RPC/Websocket URL, trying the next one in the registry..."))
-            log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.WebsocketURL))
-            if _, _, err := websocket.DefaultDialer.Dial(cfg.WebsocketURL, nil); err == nil {
+            log.Println(color.BlueString("Testing RPC/Websocket URL: " + cfg.Connections.Websocket))
+            if _, _, err := websocket.DefaultDialer.Dial(cfg.Connections.Websocket, nil); err == nil {
                 success = true
                 break
             }
@@ -377,25 +390,17 @@ func (cfg *Config) validateConfig(){
         if success != true {
             log.Fatal(color.RedString("Could not find valid RPC URL in the chain registry, please provide your own"))
         }
-        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.WebsocketURL))
+        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.Connections.Websocket))
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     } else {
-        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.WebsocketURL))
+        log.Println(color.GreenString("Using RPC/Websocket URL: " + cfg.Connections.Websocket))
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
-    //Format the information
-    cfg.RestURL = strings.TrimRight(cfg.RestURL, "/")
-    cfg.ICNSUrl = strings.TrimRight(cfg.ICNSUrl, "/")
-    cfg.ExplorerAccount = strings.ReplaceAll(cfg.ExplorerAccount," ","-")
-    cfg.ExplorerValidator = strings.ReplaceAll(cfg.ExplorerValidator," ","-")
-    cfg.ExplorerTx = strings.ReplaceAll(cfg.ExplorerTx," ","-")
-    cfg.RestTx = cfg.RestURL + "/cosmos/tx/v1beta1/txs/"
-    cfg.RestCoinGecko = "https://api.coingecko.com/api/v3/coins/" + cfg.CoinGeckoID
-    cfg.RestValidators = cfg.RestURL + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
-    cfg.ICNSAccount = cfg.ICNSUrl + "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/"
-    log.Println(color.GreenString("Using configuation for: " + cfg.Chain))
+
+    log.Println(color.GreenString("Using configuation for: " + cfg.Chain.DisplayName))
 }
 
+// Generate a configfile
 func initConfig(filePath string){
     file := `
 [clients]
@@ -423,29 +428,6 @@ telegram-chat-ids = [ "" ]
 # The name of the chain as it appears in the cosmos chain registry
 # example: name = "osmosis"
 name = "unification"
-
-
-[explorer]
-# Which explorer to use for the hyperlinks
-# Current options:
-# "ping" for ping.pub
-# "atom" for atomscan.com
-# "mint" for mintscan.io
-# "dipper" for bigdipper.live
-# "custom" to set custom URLs
-explorer-preset = "ping"
-
-# Ignored if explorer-preset = "custom"
-# If auto-path = true, the explorers' chain path will use the chains' pretty name from the registry or chaininfo
-# If auto-path = false, the explorers' chain path will use the value set by path
-auto-path = true 
-path = "Unification"
-
-# The following only take affect if explorer-preset = "custom"
-# Overrides the path option above
-explorer-custom-tx = "https://ping.pub/Unification/tx"
-explorer-custom-account = "https://ping.pub/Unification/accounts"
-explorer-custom-validator = "https://ping.pub/Unification/staking"
 
 [chaininfo]
 # If default = true, reFUNDScan will use the information given by the cosmos chain registry for the chain name
@@ -599,8 +581,13 @@ name = "reFUND"
 addr = "undvaloper1k03uvkkzmtkvfedufaxft75yqdfkfgvgsgjfwa"
 `
     // Write the content to the file
-    err := os.WriteFile(filePath + "/config.toml", []byte(file), 0644)
+    if strings.HasSuffix(filePath, "config.toml") {
+        filePath = strings.TrimSuffix(filePath, "config.toml")
+    }
+    ensureTrailingSlash(&filePath)
+    err := os.WriteFile(filePath + "config.toml", []byte(file), 0644)
     if err != nil {
         log.Fatal(color.RedString("Failed to write file: " , err))
     }
+    log.Println(color.GreenString("Config file generated at: " + configpath + "/config.toml"))
 }

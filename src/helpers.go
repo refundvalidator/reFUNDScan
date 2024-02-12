@@ -6,6 +6,7 @@ import (
 	"strings"
     "fmt"
     "math"
+    "errors"
 
 	"github.com/fatih/color"
 )
@@ -21,6 +22,9 @@ func splitAmountDenom(amount string) (float64, string){
         } else {
             break
         }           
+    }
+    if amount == "" {
+        return 0, "UnknownDenom"
     }
     denom := amount[index+1:]
     floatAmnt, _ := strconv.ParseFloat(amnt, 64)
@@ -56,8 +60,8 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
     amount, denom := splitAmountDenom(msg)
     switch res.Type.AmountFilter {
     case true:
-        if denom == config.Denom {
-            exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Exponent), 64)
+        if denom == config.Chain.Denom {
+            exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Chain.Exponent), 64)
             amt := math.Round((amount/exp)*100)/100
             currencyAmount := amt * *config.CurrencyAmount     
             if currencyAmount < res.Type.Threshold {
@@ -68,7 +72,7 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
                 return true
             }
         } else {
-            logMsg := fmt.Sprintf("Filtered Message! Message of type %s is an unknown conversion, so could not meet the currency threshold",res.TypeName)
+            logMsg := fmt.Sprintf("Filtered Message! Message of type %s is an unknown currency conversion, so could not meet the currency threshold",res.TypeName)
             log.Println(color.YellowString(logMsg))
             return false
         }
@@ -76,4 +80,18 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
         return true
     }
     return true
+}
+func getIBC(amount float64, denom string) (float64,string, error) {
+    var ibc IBCResponse
+    url := config.Connections.Rest + "/ibc/apps/transfer/v1/denom_traces/" + denom
+    getData(url, &ibc)
+    for _, chain := range(config.OtherChains) {
+        if chain.Denom == ibc.DenomTrace.BaseDenom {
+            display := chain.DisplayName
+            exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",chain.Exponent), 64)
+            amount = math.Round((amount/exp)*100)/100
+            return amount, strings.ToUpper(display), nil
+        }
+    }
+    return 0, "", errors.New("Data not available")
 }
