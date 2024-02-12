@@ -96,9 +96,6 @@ In this file, you can also define which messages to send/ignore, as well as set 
 the bot sends for a given address, by defining a new ~wallet~ field, with a couple examples predefined in the 
 config file itself. 
 
-You also have the ability to switch which explorer the bot uses for its hyperlinks, the default
-being [[https://ping.pub][ping.pub]], but other preset options such as [[https://atomscan.com][atomscan]], [[https://mintscan.io][mintscan]], and [[https://bigdipper.live][bigdipper]]. If these do not suit your needs,
-you can append custom values as well.
 ** reFUNDScan in action
 [[./assets/example.png]]
 

@@ -19,6 +19,8 @@ type AssetsResponse struct {
         } `json:"denom_units"`
         CoingeckoID string `json:"coingecko_id"`
         Coin        string `json:"symbol"`
+        Display     string `json:"display"`
+        Denom       string `json:"base"`
     } `json:"assets"`
 }
 type ChainResponse struct {

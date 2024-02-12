@@ -52,10 +52,11 @@ func main(){
     resp := make(chan MessageResponse)
     restart := make(chan bool)
 
-    for _, client := range config.Clients{
+    // Check the clients being used
+    for _, client := range config.Config.ClientsConfig.Clients {
         switch client {
         case "discord":
-            dscbot, err = discord.New("Bot " + config.DscAPI)
+            dscbot, err = discord.New("Bot " + config.Config.ClientsConfig.DscAPI)
             if err != nil {
                 log.Fatal(color.RedString("Cannot connect to discord bot, check your BotKey or internet connection"))
             }    
@@ -66,7 +67,7 @@ func main(){
             }
             log.Println(color.GreenString("Connected to Discord"))
         case "telegram":
-            tgbot, err = telegram.NewBotAPI(config.TgAPI)
+            tgbot, err = telegram.NewBotAPI(config.Config.ClientsConfig.TgAPI)
             if err != nil {
                 log.Fatal(color.RedString("Cannot connect to telegram bot, check your BotKey or internet connection"))
             }
@@ -75,19 +76,23 @@ func main(){
     }
     // Connect to the websocket
     go Connect(resp, restart)
+
     // AutoRefresh coin gecko and validator set data
-    go autoRefresh(config.RestCoinGecko,&cg)
-    go autoRefresh(config.RestValidators,&vals)
+    cgURL := "https://api.coingecko.com/api/v3/coins/" + config.Chain.CoinGeckoID
+    valURL := config.Connections.Rest + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
+    go autoRefresh(cgURL,&cg)
+    go autoRefresh(valURL,&vals)
+
     // Listen and serve
     go func(){
         for {
             select {
             case message := <- resp:
-                for _, client := range config.Clients {
+                for _, client := range config.Config.ClientsConfig.Clients {
                     switch client {
                     case "telegram":
                         tgMessage := strings.ReplaceAll(message.Message,"**","*")
-                        for _, chat := range config.TgChatIDs {
+                        for _, chat := range config.Config.ClientsConfig.TgChatIDs {
                             msg := telegram.NewMessageToChannel(chat, tgMessage)
                             msg.ParseMode = telegram.ModeMarkdown
                             msg.DisableWebPagePreview = true
@@ -103,7 +108,7 @@ func main(){
                     case "discord":
                         // Define the regular expression pattern
                         dscMessage := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`).ReplaceAllString(message.Message, "**[$1]($2)**")
-                        for _, chat := range config.DscChatIDs {
+                        for _, chat := range config.Config.ClientsConfig.DscChatIDs {
                             embd := discord.MessageEmbed {
                                 Description: dscMessage, 
                                 Color: 5793266,

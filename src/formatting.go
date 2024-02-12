@@ -18,29 +18,29 @@ import (
 
 // Returns and MD formatted hyperlink for an account when given a wallet or validator address
 func mkAccountLink(addr string) string{
-    if addr[:len(config.Bech32Prefix + "val")] == config.Bech32Prefix + "val"{
-        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerValidator,addr)
+    if addr[:len(config.Chain.Prefix + "val")] == config.Chain.Prefix + "val"{
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.Explorer.Validator,addr)
     } else {
-        for _, chain := range(config.ChainData.Chains) {
-            if chain.Bech32Prefix == addr[:len(chain.Bech32Prefix)] {
-               url := config.ExplorerBase + chain.PrettyName + "/account/" + addr
+        for _, chain := range(config.OtherChains) {
+            if chain.Prefix == addr[:len(chain.Prefix)] {
+               url := config.Explorer.Base + chain.ExplorerPath + "/account/" + addr
                return fmt.Sprintf("[%s](%s)",getAccountName(addr),url)
             }
         }
-        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.ExplorerAccount,addr)
+        return fmt.Sprintf("[%s](%s%s)",getAccountName(addr),config.Explorer.Account, addr)
     }
 }
 
 // Returns a MD formatted hyprlink for a transaction when given a TX Hash with an amount
 func mkTranscationLink(hash string, amount string) string {
-    return fmt.Sprintf("[%s](%s%s)", denomToAmount(amount), config.ExplorerTx,hash)
+    return fmt.Sprintf("[%s](%s%s)", denomToAmount(amount), config.Explorer.TX,hash)
 }
 
 // When given a transaction hash
 // Searches rest endpoints for a memo on the transaction, if not available returns an empty string
 func getMemo(hash string) string {
     var tx TxResponse
-    err := getData(config.RestTx + hash, &tx)
+    err := getData(config.Connections.Rest + "/cosmos/tx/v1beta1/txs/" + hash, &tx)
     if err != nil {
         log.Println(color.YellowString("Failed to get TX rest response: ", err))
         return ""
@@ -60,7 +60,7 @@ func getAccountName(msg string) string {
             log.Println(color.YellowString("Could not decode bech32 address"))
             continue
         }
-        addr, err := bech32.Encode(config.Bech32Prefix,data)
+        addr, err := bech32.Encode(config.Chain.Prefix,data)
         if err != nil {
             log.Println(color.YellowString("Could not encode bech32 address"))
             continue
@@ -69,7 +69,7 @@ func getAccountName(msg string) string {
     }
 
     // Check if name matches named wallet from config
-    for _, name := range config.Named {
+    for _, name := range config.Config.AddressesConfig.Addresses {
         if name.Addr == msg {
             return removeForbiddenChars(name.Name)
         }
@@ -86,7 +86,9 @@ func getAccountName(msg string) string {
     var icns ICNSResponse
     query := fmt.Sprintf(`{ "icns_names": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
-    err := getData(config.ICNSAccount + b64, &icns)
+    err := getData(config.Connections.ICNS +
+        "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" +
+        b64, &icns)
     if err != nil {
         log.Println(color.YellowString("Failed to get ICNS response ", err))
     }
@@ -115,10 +117,10 @@ func denomToAmount(msg string) string {
     // This will format the numbers in human readable form E.G.
     // 1000 FUND should become 1,000 FUND
     formatter := message.NewPrinter(language.English)
-    if denom == config.Denom {
-        exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Exponent), 64)
+    if denom == config.Chain.Denom {
+        exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Chain.Exponent), 64)
         amount = math.Round((amount/exp)*100)/100
-        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Coin ,(*config.CurrencyAmount * amount), config.Currency)
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Chain.DisplayName ,(*config.CurrencyAmount * amount), config.Currency)
     } else if denom[:4] == "ibc/" {
        amount, denom, err := getIBC(amount ,denom[4:]) 
         if err != nil {
@@ -133,4 +135,13 @@ func denomToAmount(msg string) string {
 func removeForbiddenChars(msg string) string {
 	msg = regexp.MustCompile(`[\[\]\(\)*]`).ReplaceAllString(msg, "")
     return msg
+}
+
+func ensureTrailingSlash(str *string) {
+    if !strings.HasSuffix(*str, "/") {
+       *str += "/" 
+    }
+}
+func ensureNoSpaces(str *string) {
+   *str = strings.ReplaceAll(*str," ","-")
 }
