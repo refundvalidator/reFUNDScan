@@ -1,7 +1,7 @@
 #+TITLE: reFUNDScan
-#+DESCRIPTION: Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
+#+DESCRIPTION: Telegram/Discord bot to monitor on-chain activity for Cosmos-SDK Chains
 #+STARTUP: inlineimages
-Telegram bot to monitor on-chain activity for Cosmos-SDK Chains
+Telegram/Discord bot to monitor on-chain activity for Cosmos-SDK Chains
 
 
 ** Capabilities

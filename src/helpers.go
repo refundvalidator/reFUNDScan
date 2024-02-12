@@ -56,6 +56,7 @@ func isAllowedMessage (res MessageResponse) bool {
         return true
     }
 }
+// TODO Allow this function to be used with other chains.
 func isAllowedAmount(res MessageResponse, msg string) bool {
     amount, denom := splitAmountDenom(msg)
     switch res.Type.AmountFilter {
@@ -63,7 +64,7 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
         if denom == config.Chain.Denom {
             exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Chain.Exponent), 64)
             amt := math.Round((amount/exp)*100)/100
-            currencyAmount := amt * *config.CurrencyAmount     
+            currencyAmount := amt * *config.Chain.CoinGeckoData.Price
             if currencyAmount < res.Type.Threshold {
                 logMsg := fmt.Sprintf("Filtered Message! Message of type %s did not meet the currency threshold of: %.0f %s",res.TypeName,res.Type.Threshold, config.Currency)
                 log.Println(color.YellowString(logMsg))
@@ -81,6 +82,7 @@ func isAllowedAmount(res MessageResponse, msg string) bool {
     }
     return true
 }
+// TODO Have this function read asset data from the chains as well, instead of just the primary denoms'
 func getIBC(amount float64, denom string) (float64,string, error) {
     var ibc IBCResponse
     url := config.Connections.Rest + "/ibc/apps/transfer/v1/denom_traces/" + denom

@@ -8,6 +8,8 @@ import (
     "regexp"
 	"strconv"
 	"strings"
+    "time"
+    "math/rand"
 
 	"github.com/fatih/color"
 	"github.com/btcsuite/btcutil/bech32"
@@ -40,7 +42,7 @@ func mkTranscationLink(hash string, amount string) string {
 // Searches rest endpoints for a memo on the transaction, if not available returns an empty string
 func getMemo(hash string) string {
     var tx TxResponse
-    err := getData(config.Connections.Rest + "/cosmos/tx/v1beta1/txs/" + hash, &tx)
+    err := getData(config.Connections.Rest + "cosmos/tx/v1beta1/txs/" + hash, &tx)
     if err != nil {
         log.Println(color.YellowString("Failed to get TX rest response: ", err))
         return ""
@@ -87,7 +89,7 @@ func getAccountName(msg string) string {
     query := fmt.Sprintf(`{ "icns_names": { "address": "%s" }}`, msg)
     b64 := base64.StdEncoding.EncodeToString([]byte(query))
     err := getData(config.Connections.ICNS +
-        "/cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" +
+        "cosmwasm/wasm/v1/contract/osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd/smart/" +
         b64, &icns)
     if err != nil {
         log.Println(color.YellowString("Failed to get ICNS response ", err))
@@ -120,13 +122,35 @@ func denomToAmount(msg string) string {
     if denom == config.Chain.Denom {
         exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Chain.Exponent), 64)
         amount = math.Round((amount/exp)*100)/100
-        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Chain.DisplayName ,(*config.CurrencyAmount * amount), config.Currency)
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Chain.DisplayName ,(*config.Chain.CoinGeckoData.Price * amount), config.Currency)
     } else if denom[:4] == "ibc/" {
         amount, denom, err := getIBC(amount ,denom[4:]) 
         if err != nil {
             return "Unknown IBC"
         }
-        return formatter.Sprintf("%.2f %s", amount, denom)
+        var price float64
+        for i := range config.OtherChains {
+            chain := &config.OtherChains[i]
+            if chain.DisplayName == denom {
+                // Only query for data we need, and start auto refreshing the data
+                // Sleeps for a random amount of time, to wait for the response
+                // This is needed to prevent overloading the CoinGecko API
+                if !chain.CoinGeckoData.Active {
+                    chain.CoinGeckoData.Active = true
+                    url := "https://api.coingecko.com/api/v3/coins/" + chain.CoinGeckoData.ID
+                    // Random amount of time to stagger the messages, prevent all the API Requests from hitting at once.
+                    time.Sleep(time.Duration(rand.Intn(60-10+1)+10) * time.Second)
+                    go autoRefresh(url, &chain.CoinGeckoData.Data)
+                    // Wait for the data query
+                    time.Sleep(10 * time.Second)
+                }
+                price = *chain.CoinGeckoData.Price
+            }
+        }
+        if price == 0 {
+            return formatter.Sprintf("%.2f %s (%s %s)", amount, denom,"?", config.Currency)
+        }
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, denom,(price * amount), config.Currency)
     } else {
         return "Unknown IBC"
     }
