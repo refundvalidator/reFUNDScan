@@ -16,7 +16,6 @@ import (
 )
 var (
     // Persistent json responses
-    cg CoinGeckoResponse
     vals ValidatorResponse
 
     tgbot *telegram.BotAPI
@@ -75,9 +74,9 @@ func main(){
     go Connect(resp, restart)
 
     // AutoRefresh coin gecko and validator set data
-    cgURL := "https://api.coingecko.com/api/v3/coins/" + config.Chain.CoinGeckoID
-    valURL := config.Connections.Rest + "/cosmos/staking/v1beta1/validators?pagination.limit=100000"
-    go autoRefresh(cgURL,&cg)
+    cgURL := "https://api.coingecko.com/api/v3/coins/" + config.Chain.CoinGeckoData.ID
+    valURL := config.Connections.Rest + "cosmos/staking/v1beta1/validators?pagination.limit=100000"
+    go autoRefresh(cgURL,&config.Chain.CoinGeckoData.Data)
     go autoRefresh(valURL,&vals)
 
     // Listen and serve

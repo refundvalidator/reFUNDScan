@@ -1,14 +1,16 @@
 package main
 
 import (
-    "encoding/json"
-    "errors"
-    "io"
-    "log"
-    "net/http"
-    "time"
+	"encoding/json"
+	"errors"
+	"io"
+	"log"
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
 
-    "github.com/fatih/color"
+	"github.com/fatih/color"
 )
 
 type AssetsResponse struct {
@@ -225,16 +227,25 @@ func getData(url string, container interface{}) error {
     }
     return nil
 }
+// TODO create an autoRefresh function specifically for coin gecko, which handles delays/rate limits
+// and discards responses if the data is 0. Coin Gecko's rate limit doesnt block the URL, instead it
+// returns garbage data (0's)
 func autoRefresh(url string, container interface{}) {
-    ticker := time.NewTicker(time.Second * 60)
+    delay := time.Duration(300) * time.Second
+    // SLUG this is a cheesy fix
+    // Stagger the coin gecko responses
+    if strings.Contains(url, "coingecko") {
+        delay = time.Duration(rand.Intn(600-300+1)+300) * time.Second
+    }
+    ticker := time.NewTicker(delay)
     if err := getData(url, container); err != nil {
-        log.Println(color.RedString("Failed to get AutoRefresh Data: ", err))
+        log.Println(color.YellowString("Failed to get AutoRefresh Data: ", err))
     }
     for {
         select {
         case <-ticker.C:
             if err := getData(url, container); err != nil {
-                log.Println(color.RedString("Failed to get AutoRefresh Data: ", err))
+                log.Println(color.YellowString("Failed to get AutoRefresh Data: ", err))
             }
         }
     }

@@ -85,13 +85,20 @@ type MessagesConfig struct {
     DeleteAccount   MessageConfig `toml:"delete-account"`
 }
 
+
 type ChainData struct {
     DisplayName       string 
     Denom             string
     Exponent          int 
     Prefix            string
     ExplorerPath      string
-    CoinGeckoID       string
+    CoinGeckoData     CoinGeckoData
+}
+type CoinGeckoData struct {
+    ID              string
+    Price           *float64
+    Active          bool
+    Data            CoinGeckoResponse
 }
 type ConnectionData struct {
     Rest            string
@@ -109,12 +116,11 @@ type ExplorerData struct {
 type Config struct {
     Config          ConfigFile
 
+    Currency        string
     Chain           ChainData
     Connections     ConnectionData
     Explorer        ExplorerData
     OtherChains     []ChainData
-    Currency        string
-    CurrencyAmount  *float64
 }
 
 var (
@@ -198,8 +204,8 @@ func (cfg *Config) parseConfig(filePath string) {
             Exponent: assets.Assets[0].DenomUnits[1].Exponent,
             Prefix: chain.Bech32Prefix,
             ExplorerPath: chain.PrettyName,
-            CoinGeckoID: assets.Assets[0].CoingeckoID,
         }
+        cfg.Chain.CoinGeckoData.ID = assets.Assets[0].CoingeckoID
     } else {
         cfg.Chain = ChainData {
             DisplayName: configfile.ChainInfoConfig.Coin, 
@@ -207,18 +213,19 @@ func (cfg *Config) parseConfig(filePath string) {
             Exponent: configfile.ChainInfoConfig.Exponent,
             Prefix: configfile.ChainInfoConfig.Bech32Prefix,
             ExplorerPath: configfile.ChainInfoConfig.PrettyName,
-            CoinGeckoID: configfile.ChainInfoConfig.CoinGeckoID,
         }
+        cfg.Chain.CoinGeckoData.ID = configfile.ChainInfoConfig.CoinGeckoID
     }
     // Set the currency type
-    r := reflect.ValueOf(&cg.MarketData.CurrentPrice).Elem()
+    r := reflect.ValueOf(&cfg.Chain.CoinGeckoData.Data.MarketData.CurrentPrice).Elem()
     for i := 0; i < r.NumField(); i++ {
         if strings.ToLower(configfile.MessagesConfig.Currency) == strings.ToLower(r.Type().Field(i).Name) {
             cfg.Currency = strings.ToUpper(r.Type().Field(i).Name)
-            cfg.CurrencyAmount = r.Field(i).Addr().Interface().(*float64)
+            cfg.Chain.CoinGeckoData.Price = r.Field(i).Addr().Interface().(*float64)
         }
     }
     // Grab OtherChains Configurations
+    // TODO Have the program restart ever day or so, to refresh the chain data, or autofresh this
     log.Println(color.BlueString("Querying Asset and Chain data for other available chains..."))
     err := getData("https://raw.githubusercontent.com/refundvalidator/chain-registry/master/mainnets.json", &git)
     if err != nil {
@@ -235,7 +242,7 @@ func (cfg *Config) parseConfig(filePath string) {
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/chain.json", c),
             &chain)
         if err != nil {
-            log.Println(color.YellowString("Failed to get Chain Data for: " + c))
+            log.Println(color.YellowString("Failed to get Chain Data for: " + c + " moving to next..."))
             continue
         } else {
             // Fixes for specific chains, that don't adhear their paths to the chain registry
@@ -244,27 +251,32 @@ func (cfg *Config) parseConfig(filePath string) {
             } else {
                 data.ExplorerPath = strings.ReplaceAll(chain.PrettyName," ","-")
             }
-            data.DisplayName = chain.PrettyName
             data.Prefix = chain.Bech32Prefix
+            if data.Prefix == "" || data.ExplorerPath == "" {
+                log.Println(color.YellowString("Failed to get Chain Data for: " + c + " moving to next..."))
+                continue
+            }
         }
         err = getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", c),
             &ass)
         if err != nil {
-            log.Println(color.YellowString("Failed to get Asset Data for: " + c))
+            log.Println(color.YellowString("Failed to get Asset Data for: " + c + " moving to next..."))
             continue
         } else {
             // Verify we can grab the correct DisplayName, Exponent, and Denom from the list
+            data.CoinGeckoData.ID = ass.Assets[0].CoingeckoID
             for _, denom := range(ass.Assets[0].DenomUnits) {
-                switch strings.ToUpper(denom.Denom){
-                case strings.ToUpper(ass.Assets[0].Display):
+                switch denom.Denom{
+                case ass.Assets[0].Display:
                     data.DisplayName = strings.ToUpper(denom.Denom)
                     data.Exponent = denom.Exponent
-                case strings.ToUpper(ass.Assets[0].Denom):
+                case ass.Assets[0].Denom:
                     data.Denom = strings.ToLower(ass.Assets[0].Denom)
                 }
             }
-            if data.DisplayName == "" || data.Exponent == 0 || data.Denom == "" {
+            if data.DisplayName == "" || data.Denom == "" || data.CoinGeckoData.ID == "" {
+                log.Println(color.YellowString("Failed to get Asset Data for: " + c + " moving to next..."))
                 continue 
             }
         }
@@ -275,6 +287,15 @@ func (cfg *Config) parseConfig(filePath string) {
         log.Println(color.GreenString(fmt.Sprintf("%d Chains Succesfully Queried!", available)))
     } else {
         log.Println(color.YellowString(fmt.Sprintf("No chains could be queried")))
+    }
+    for i := range(cfg.OtherChains) {
+        chain := &cfg.OtherChains[i]
+        r := reflect.ValueOf(&chain.CoinGeckoData.Data.MarketData.CurrentPrice).Elem()
+        for i := 0; i < r.NumField(); i++ {
+            if strings.ToLower(configfile.MessagesConfig.Currency) == strings.ToLower(r.Type().Field(i).Name) {
+                chain.CoinGeckoData.Price = r.Field(i).Addr().Interface().(*float64)
+            }
+        }
     }
     cfg.validateConfig()
 }
@@ -295,6 +316,7 @@ func (cfg *Config) validateConfig(){
     ensureTrailingSlash(&cfg.Connections.Websocket)
     ensureTrailingSlash(&cfg.Connections.ICNS)
     ensureNoSpaces(&cfg.Chain.ExplorerPath)
+
     // Set URL Pathings
     cfg.Explorer.Base = "https://ping.pub/"
     cfg.Explorer.Account = cfg.Explorer.Base + cfg.Chain.ExplorerPath + "/account/"
@@ -397,7 +419,7 @@ func (cfg *Config) validateConfig(){
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
 
-    log.Println(color.GreenString("Using configuation for: " + cfg.Chain.DisplayName))
+    log.Println(color.GreenString("Using configuation for: " + configfile.ChainConfig.Name))
 }
 
 // Generate a configfile
