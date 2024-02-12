@@ -219,6 +219,7 @@ func (cfg *Config) parseConfig(filePath string) {
         }
     }
     // Grab OtherChains Configurations
+    // TODO Have the program restart ever day or so, to refresh the chain data, or autofresh this
     log.Println(color.BlueString("Querying Asset and Chain data for other available chains..."))
     err := getData("https://raw.githubusercontent.com/refundvalidator/chain-registry/master/mainnets.json", &git)
     if err != nil {
@@ -244,8 +245,11 @@ func (cfg *Config) parseConfig(filePath string) {
             } else {
                 data.ExplorerPath = strings.ReplaceAll(chain.PrettyName," ","-")
             }
-            data.DisplayName = chain.PrettyName
             data.Prefix = chain.Bech32Prefix
+            if data.Prefix == "" || data.ExplorerPath == "" {
+                log.Println(color.YellowString("Failed to get Chain Data for: " + c))
+                continue
+            }
         }
         err = getData(
             fmt.Sprintf("https://raw.githubusercontent.com/cosmos/chain-registry/master/%s/assetlist.json", c),
@@ -255,16 +259,18 @@ func (cfg *Config) parseConfig(filePath string) {
             continue
         } else {
             // Verify we can grab the correct DisplayName, Exponent, and Denom from the list
+            data.CoinGeckoID = ass.Assets[0].CoingeckoID
             for _, denom := range(ass.Assets[0].DenomUnits) {
-                switch strings.ToUpper(denom.Denom){
-                case strings.ToUpper(ass.Assets[0].Display):
+                switch denom.Denom{
+                case ass.Assets[0].Display:
                     data.DisplayName = strings.ToUpper(denom.Denom)
                     data.Exponent = denom.Exponent
-                case strings.ToUpper(ass.Assets[0].Denom):
+                case ass.Assets[0].Denom:
                     data.Denom = strings.ToLower(ass.Assets[0].Denom)
                 }
             }
-            if data.DisplayName == "" || data.Exponent == 0 || data.Denom == "" {
+            if data.DisplayName == "" || data.Denom == "" || data.CoinGeckoID == "" {
+                log.Println(color.YellowString("Failed to get Asset Data for: " + c))
                 continue 
             }
         }
@@ -397,7 +403,7 @@ func (cfg *Config) validateConfig(){
         log.Println(color.GreenString("RPC/Websocket URL Valid\n"))
     }
 
-    log.Println(color.GreenString("Using configuation for: " + cfg.Chain.DisplayName))
+    log.Println(color.GreenString("Using configuation for: " + configfile.ChainConfig.Name))
 }
 
 // Generate a configfile
