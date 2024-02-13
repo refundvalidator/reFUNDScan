@@ -8,6 +8,8 @@ import (
     "regexp"
 	"strconv"
 	"strings"
+    "time"
+    "math/rand"
 
 	"github.com/fatih/color"
 	"github.com/btcsuite/btcutil/bech32"
@@ -120,13 +122,35 @@ func denomToAmount(msg string) string {
     if denom == config.Chain.Denom {
         exp, _ := strconv.ParseFloat("1" + strings.Repeat("0",config.Chain.Exponent), 64)
         amount = math.Round((amount/exp)*100)/100
-        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Chain.DisplayName ,(*config.CurrencyAmount * amount), config.Currency)
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, config.Chain.DisplayName ,(*config.Chain.CoinGeckoData.Price * amount), config.Currency)
     } else if denom[:4] == "ibc/" {
         amount, denom, err := getIBC(amount ,denom[4:]) 
         if err != nil {
             return "Unknown IBC"
         }
-        return formatter.Sprintf("%.2f %s", amount, denom)
+        var price float64
+        for i := range(config.OtherChains){
+            chain := &config.OtherChains[i]
+            if chain.DisplayName == denom {
+                // Only query for data we need, and start auto refreshing the data
+                // Sleeps for a random amount of time, to wait for the response
+                // This is needed to prevent overloading the CoinGecko API
+                if !chain.CoinGeckoData.Active {
+                    chain.CoinGeckoData.Active = true
+                    url := "https://api.coingecko.com/api/v3/coins/" + chain.CoinGeckoData.ID
+                    // Random amount of time so all queries dont hit at once
+                    time.Sleep(time.Duration(rand.Intn(60-10+1)+10) * time.Second)
+                    go autoRefresh(url, &chain.CoinGeckoData.Data)
+                    // Wait for the data query
+                    time.Sleep(10 * time.Second)
+                }
+                price = *chain.CoinGeckoData.Price
+            }
+        }
+        if price == 0 {
+            return formatter.Sprintf("%.2f %s (%s %s)", amount, denom,"?", config.Currency)
+        }
+        return formatter.Sprintf("%.2f %s (%.2f %s)", amount, denom,(price * amount), config.Currency)
     } else {
         return "Unknown IBC"
     }

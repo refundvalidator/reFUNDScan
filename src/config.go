@@ -85,13 +85,20 @@ type MessagesConfig struct {
     DeleteAccount   MessageConfig `toml:"delete-account"`
 }
 
+
 type ChainData struct {
     DisplayName       string 
     Denom             string
     Exponent          int 
     Prefix            string
     ExplorerPath      string
-    CoinGeckoID       string
+    CoinGeckoData     CoinGeckoData
+}
+type CoinGeckoData struct {
+    ID              string
+    Price           *float64
+    Active          bool
+    Data            CoinGeckoResponse
 }
 type ConnectionData struct {
     Rest            string
@@ -109,12 +116,11 @@ type ExplorerData struct {
 type Config struct {
     Config          ConfigFile
 
+    Currency        string
     Chain           ChainData
     Connections     ConnectionData
     Explorer        ExplorerData
     OtherChains     []ChainData
-    Currency        string
-    CurrencyAmount  *float64
 }
 
 var (
@@ -198,8 +204,8 @@ func (cfg *Config) parseConfig(filePath string) {
             Exponent: assets.Assets[0].DenomUnits[1].Exponent,
             Prefix: chain.Bech32Prefix,
             ExplorerPath: chain.PrettyName,
-            CoinGeckoID: assets.Assets[0].CoingeckoID,
         }
+        cfg.Chain.CoinGeckoData.ID = assets.Assets[0].CoingeckoID
     } else {
         cfg.Chain = ChainData {
             DisplayName: configfile.ChainInfoConfig.Coin, 
@@ -207,15 +213,15 @@ func (cfg *Config) parseConfig(filePath string) {
             Exponent: configfile.ChainInfoConfig.Exponent,
             Prefix: configfile.ChainInfoConfig.Bech32Prefix,
             ExplorerPath: configfile.ChainInfoConfig.PrettyName,
-            CoinGeckoID: configfile.ChainInfoConfig.CoinGeckoID,
         }
+        cfg.Chain.CoinGeckoData.ID = configfile.ChainInfoConfig.CoinGeckoID
     }
     // Set the currency type
-    r := reflect.ValueOf(&cg.MarketData.CurrentPrice).Elem()
+    r := reflect.ValueOf(&cfg.Chain.CoinGeckoData.Data.MarketData.CurrentPrice).Elem()
     for i := 0; i < r.NumField(); i++ {
         if strings.ToLower(configfile.MessagesConfig.Currency) == strings.ToLower(r.Type().Field(i).Name) {
             cfg.Currency = strings.ToUpper(r.Type().Field(i).Name)
-            cfg.CurrencyAmount = r.Field(i).Addr().Interface().(*float64)
+            cfg.Chain.CoinGeckoData.Price = r.Field(i).Addr().Interface().(*float64)
         }
     }
     // Grab OtherChains Configurations
@@ -259,7 +265,7 @@ func (cfg *Config) parseConfig(filePath string) {
             continue
         } else {
             // Verify we can grab the correct DisplayName, Exponent, and Denom from the list
-            data.CoinGeckoID = ass.Assets[0].CoingeckoID
+            data.CoinGeckoData.ID = ass.Assets[0].CoingeckoID
             for _, denom := range(ass.Assets[0].DenomUnits) {
                 switch denom.Denom{
                 case ass.Assets[0].Display:
@@ -269,7 +275,7 @@ func (cfg *Config) parseConfig(filePath string) {
                     data.Denom = strings.ToLower(ass.Assets[0].Denom)
                 }
             }
-            if data.DisplayName == "" || data.Denom == "" || data.CoinGeckoID == "" {
+            if data.DisplayName == "" || data.Denom == "" || data.CoinGeckoData.ID == "" {
                 log.Println(color.YellowString("Failed to get Asset Data for: " + c))
                 continue 
             }
@@ -281,6 +287,16 @@ func (cfg *Config) parseConfig(filePath string) {
         log.Println(color.GreenString(fmt.Sprintf("%d Chains Succesfully Queried!", available)))
     } else {
         log.Println(color.YellowString(fmt.Sprintf("No chains could be queried")))
+    }
+    for i := range(cfg.OtherChains) {
+        chain := &cfg.OtherChains[i]
+        r := reflect.ValueOf(&chain.CoinGeckoData.Data.MarketData.CurrentPrice).Elem()
+        for i := 0; i < r.NumField(); i++ {
+            if strings.ToLower(configfile.MessagesConfig.Currency) == strings.ToLower(r.Type().Field(i).Name) {
+                chain.CoinGeckoData.Price = r.Field(i).Addr().Interface().(*float64)
+                log.Print(chain.CoinGeckoData.Price)
+            }
+        }
     }
     cfg.validateConfig()
 }
