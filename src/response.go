@@ -165,6 +165,8 @@ type WebsocketResponse struct {
             RedelegateSourceValidator      []string `json:"redelegate.source_validator"`
             RedelegateDestinationValidator []string `json:"redelegate.destination_validator"`
             RedelegateAmount               []string `json:"redelegate.amount"`
+            ProposalVoteOption             []string `json:"proposal_vote.option"`
+            ProposalVoteID                 []string `json:"proposal_vote.proposal_id"`
             // Starname
             AccountName        []string `json:"message.account_name"`
             DomainName         []string `json:"message.domain_name"`

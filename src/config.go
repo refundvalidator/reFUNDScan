@@ -78,6 +78,7 @@ type MessagesConfig struct {
     Undelegations   MessageConfig `toml:"undelegations"`
     Redelegations   MessageConfig `toml:"redelegations"`
     Restake         MessageConfig `toml:"restake"`
+    Vote            MessageConfig `toml:"vote"`
     RegisterAccount MessageConfig `toml:"register-account"`
     RegisterDomain  MessageConfig `toml:"register-domain"`
     TransferAccount MessageConfig `toml:"transfer-account"`
@@ -560,6 +561,12 @@ list = []
 amount-filter = false
 threshold = 1000
 [messages.restake]
+enable = false
+filter = "default"
+list = []
+amount-filter = false
+threshold = 1000
+[messages.vote]
 enable = false
 filter = "default"
 list = []

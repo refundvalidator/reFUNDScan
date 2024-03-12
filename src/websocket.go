@@ -5,6 +5,7 @@ import (
     "fmt"
     "encoding/json"
     "reflect"
+    "strings"
 
     "github.com/fatih/color"
     "github.com/gorilla/websocket"
@@ -268,6 +269,33 @@ func Connect(resp chan MessageResponse, restart chan bool) {
                             mkTranscationLink(events.TxHash[0],events.TransferAmount[1])
                         if !isAllowedAmount(msg, events.TransferAmount[1]) {
                             continue
+                        }
+
+                    } else if ev == "/cosmos.gov.v1beta1.MsgVote" && config.Config.MessagesConfig.Vote.Enabled {
+                        // Governence Votes
+                        // FIXME Find a better way to set the URL with a helper func
+                        // FIXME Create a generic account link helper, apart from mkTransactionLink
+                        url := config.Explorer.Base + config.Chain.ExplorerPath + "/gov/"
+                        txurl := config.Explorer.Base + config.Chain.ExplorerPath + "/tx/" + events.TxHash[0]
+                        msg.Type = config.Config.MessagesConfig.Vote
+                        msg.TypeName = "Vote"
+                        msg.Message +=
+                            "\n ** 🗳️ Vote  🗳️ **" +
+                            "\n\n**Proposal:** " +
+                            fmt.Sprintf("[%s](%s%s)", events.ProposalVoteID[0],url, events.ProposalVoteID[0]) +
+                            "\n**Voter:** " +
+                            mkAccountLink(events.TransferSender[0]) +
+                           "\n**Vote:** " 
+                        if strings.Contains(events.ProposalVoteOption[0],"VOTE_OPTION_NO_WITH_VETO") {
+                           msg.Message += fmt.Sprintf("[VETO](%s)",txurl)
+                        } else if strings.Contains(events.ProposalVoteOption[0],"VOTE_OPTION_NO"){
+                           msg.Message += fmt.Sprintf("[NO](%s)",txurl)
+                        } else if strings.Contains(events.ProposalVoteOption[0],"VOTE_OPTION_YES"){
+                           msg.Message += fmt.Sprintf("[YES](%s)",txurl)
+                        } else if strings.Contains(events.ProposalVoteOption[0],"VOTE_OPTION_ABSTAIN"){
+                           msg.Message += fmt.Sprintf("[ABSTAIN](%s)",txurl)
+                        } else if strings.Contains(events.ProposalVoteOption[0],"VOTE_OPTION_UNSPECIFIED"){
+                           msg.Message += fmt.Sprintf("[UNSPECIFIED](%s)",txurl)
                         }
 
                     } else if ev == "/starnamed.x.starname.v1beta1.MsgRegisterAccount" && config.Config.MessagesConfig.RegisterAccount.Enabled {
